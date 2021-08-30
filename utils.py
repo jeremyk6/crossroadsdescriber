@@ -37,6 +37,33 @@ def azimuthAngle( x1, y1, x2, y2):
         angle = 3.0 * math.pi / 2.0 + math.atan(dy / -dx)
     return (angle * 180 / math.pi)
 
+# Compute mean coordinates of a list of nodes
+# Params :
+#   G : osmnx graph
+#   nodes : list of nodes ids
+def meanCoordinates(G, nodes):
+    crossroad_center = {"x":0, "y":0}
+    for node_id in nodes:
+        crossroad_center["x"] += G.nodes[node_id]["x"]
+        crossroad_center["y"] += G.nodes[node_id]["y"]
+    crossroad_center["x"] /= len(nodes)
+    crossroad_center["y"] /= len(nodes)
+    return crossroad_center
+
+# Compute mean angle (azimuth) of a branch (represented by its border nodes) from the center of the crossroad
+def meanAngle(G, border_nodes, crossroad_center):
+    mean_angle = 0
+    for border_node in border_nodes:
+        border_node = G.nodes[border_node]
+        angle = azimuthAngle(crossroad_center["x"], crossroad_center["y"], border_node["x"], border_node["y"])
+        # if angle is near to 0°, revert it to -X° to enable mean angle calculation
+        if angle > 315 :
+            angle -= 360
+        mean_angle += angle
+    mean_angle /= len(border_nodes)
+    return mean_angle
+
+# Translate words
 def tr(word):
     if word == "Road":
         return "circulation"

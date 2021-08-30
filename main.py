@@ -12,7 +12,7 @@ from toolz import unique
 from lib.jsRealBclass import N,A,Pro,D,Adv,V,C,P,DT,NO,Q,  NP,AP,AdvP,VP,CP,PP,S,SP,  Constituent, Terminal, Phrase, jsRealB
 import lib.crseg.segmentation as cs
 import osmnx as ox
-
+from config import *
 # Configure arg parser
 
 parser = argparse.ArgumentParser(description="Build a basic description of the crossroad located at the requested coordinate.")
@@ -22,57 +22,6 @@ args = parser.parse_args()
 #
 # OSMnx configuration
 #
-
-way_tags_to_keep = [
-    # general informations,
-    'name',
-    'highway',
-    'fooway',
-    'oneway',
-    'surface',
-    # lanes informations
-    'lanes',
-    'lanes:backward',
-    'lanes:forward',
-    # turn informations
-    'turn:lanes',
-    'turn:lanes:backward',
-    'turn:lanes:forward',
-    #cycling informations
-    'bicycle',
-    'segregated',
-    'cycleway',
-    'cycleway:right',
-    'cycleway:left',
-    'cycleway:both',
-    # sidewalk informations
-    'sidewalk',
-    'sidewalk:left',
-    'sidewalk:right',
-    'sidewalk:both',
-    # public transportation informations,
-    'bus',
-    'psv',
-    'psv:lanes:backward',
-    'psv:lanes:forward'
-]
-
-node_tags_to_keep = [
-    # general informations
-    'highway',
-    # crosswalk informations
-    'crossing',
-    'tactile_paving',
-    # traffic signals informations
-    'traffic_signals',
-    'traffic_signals:direction',
-    'traffic_signals:sound',
-    'button_operated'
-    #sidewalk informations
-    'kerb',
-    #island informations
-    'crossing:island'
-]
 
 ox.config(use_cache=True, useful_tags_way = list(set(ox.settings.useful_tags_way + way_tags_to_keep)), useful_tags_node = list(set(ox.settings.useful_tags_node + node_tags_to_keep)))
 
@@ -113,14 +62,8 @@ os.system("clear")
 
 seg_crossroad = SegmentationReader("data/intersection.json").getCrossroads()[0]
 
-# Intersection center
-# Computed by mean coordinates, may use convex hull + centroid later
-crossroad_center = {"x":0, "y":0}
-for node_id in seg_crossroad.border_nodes:
-    crossroad_center["x"] += G.nodes[node_id]["x"]
-    crossroad_center["y"] += G.nodes[node_id]["y"]
-crossroad_center["x"] /= len(seg_crossroad.border_nodes)
-crossroad_center["y"] /= len(seg_crossroad.border_nodes)
+# Intersection center. Computed by mean coordinates, may use convex hull + centroid later
+crossroad_center = meanCoordinates(G, seg_crossroad.border_nodes)
 
 # Branch and ways creation
 id = 1
@@ -163,63 +106,31 @@ for branch in seg_crossroad.branches:
                 
                 # Is it a crosswalk ?
                 if "crossing" in node:
-                    # Does it have a tactile paving ?
-                    cw_tactile_paving = "no"
-                    if "tactile_paving" in node:
-                        cw_tactile_paving = node["tactile_paving"]
-                    junction = Crosswalk(junction, cw_tactile_paving)
-                    # Does it have a traffic light ?
-                    if node["crossing"] == "traffic_signals":
-                        ptl_sound = "no"
-                        # Does it have sound ?
-                        if "traffic_signals:sound" in node and node["traffic_signals:sound"] == "yes":
-                            ptl_sound = "yes"
-                        junction = Pedestrian_traffic_light(junction, ptl_sound)
+                    junction = createCrosswalk(junction, node)
 
                 # Is it a traffic light ?
                 if "traffic_signals" in node:
-                    tl_direction = "forward"
-                    if "traffic_signals:direction" in node:
-                        tl_direction = node["traffic_signals:direction"]
-                    junction = Traffic_light(junction, None, tl_direction)
+                    junction = createTrafficSignal(junction, node)
                     
             junctions.append(junction)
 
         # Ways creation
-
         way = Way(edge["osmid"], edge["name"], junctions, channels = [])
 
-        # Does it have directed lanes ?
+        # If n2 is a border node, it means the way is drawn as outgoing from the direction.
         way_out = True if n2 in seg_crossroad.border_nodes else False
+
+        # Does it have directed lanes ?
         if "lanes:backward" in edge and "lanes:forward" in edge:
-            # does it have designated bus lanes ?
-            if "psv:lanes:backward" in edge and "psv:lanes:forward" in edge:
-                for lane in edge["psv:lanes:backward"].split("|"):
-                    if lane == "designated":
-                        way.channels.append(Bus(None, "in" if way_out else "out"))
-                    else:
-                        way.channels.append(Road(None, "in" if way_out else "out"))
-                for lane in edge["psv:lanes:forward"].split("|"):
-                    if lane == "designated":
-                        way.channels.append(Bus(None, "in" if way_out else "in"))
-                    else:
-                        way.channels.append(Road(None, "in" if way_out else "in"))
-            else:
-                for i in range(int(edge["lanes:backward"])):
-                    way.channels.append(Road(None, "in" if way_out else "out"))
-                for i in range(int(edge["lanes:forward"])):
-                    way.channels.append(Road(None, "out" if way_out else "in"))
+            createDirectedLanes(edge, way, way_out)
         # Does it have lanes ?
         elif "lanes" in edge:
-            for i in range(int(edge["lanes"])):
-                if edge["highway"]=="service" and edge["psv"]=="yes":
-                    way.channels.append(Bus(None, "out" if way_out else "in"))
-                else:
-                    way.channels.append(Road(None, "out" if way_out else "in"))
+            createUndirectedLanes(edge, way, way_out)
         else :
-            way.channels.append(Road(None, "out" if way_out else "in"))
+            createLane("road", way, way_out)
 
         # Does it have sidewalks (default : yes)
+        # Bug in lanes with sidewalks, to solvbe later
         '''
         if "sidewalk" in edge:
             if edge["sidewalk"] == "yes":
@@ -233,15 +144,7 @@ for branch in seg_crossroad.branches:
         ways.append(way)
 
     # Compute mean angle by branch
-    mean_angle = 0
-    for border_node in border_nodes:
-        border_node = G.nodes[border_node]
-        angle = azimuthAngle(crossroad_center["x"], crossroad_center["y"], border_node["x"], border_node["y"])
-        # if angle is near to 0°, revert it to -X° to enable mean angle calculation
-        if angle > 315 :
-            angle -= 360
-        mean_angle += angle
-    mean_angle /= len(border_nodes)
+    mean_angle = meanAngle(G, border_nodes, crossroad_center)
 
     branches.append(Branch(id, mean_angle, None, ways[0].name, ways))
 

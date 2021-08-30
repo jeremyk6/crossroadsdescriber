@@ -160,3 +160,59 @@ class Yield(JunctionDecorator):
         # Specific attributes
         JunctionDecorator.yd_direction = yd_direction
         JunctionDecorator.yd_way = yd_way
+
+#
+# Object creation function
+#
+
+def createCrosswalk(junction, node):
+    # Does it have a tactile paving ?
+    cw_tactile_paving = "no"
+    if "tactile_paving" in node:
+        cw_tactile_paving = node["tactile_paving"]
+    junction = Crosswalk(junction, cw_tactile_paving)
+    # Does it have a traffic light ?
+    if node["crossing"] == "traffic_signals":
+        ptl_sound = "no"
+        # Does it have sound ?
+        if "traffic_signals:sound" in node and node["traffic_signals:sound"] == "yes":
+            ptl_sound = "yes"
+        junction = Pedestrian_traffic_light(junction, ptl_sound)
+    return junction
+
+def createTrafficSignal(junction, node):
+    tl_direction = "forward"
+    if "traffic_signals:direction" in node:
+        tl_direction = node["traffic_signals:direction"]
+    junction = Traffic_light(junction, None, tl_direction)
+    return junction
+
+def createDirectedLanes(edge, way, way_out):
+    # does it have designated bus lanes ?
+    if "psv:lanes:backward" in edge and "psv:lanes:forward" in edge:
+        for lane in edge["psv:lanes:backward"].split("|"):
+            if lane == "designated":
+                way.channels.append(Bus(None, "in" if way_out else "out"))
+            else:
+                way.channels.append(Road(None, "in" if way_out else "out"))
+        for lane in edge["psv:lanes:forward"].split("|"):
+            if lane == "designated":
+                way.channels.append(Bus(None, "out" if way_out else "in"))
+            else:
+                way.channels.append(Road(None, "out" if way_out else "in"))
+    else:
+        for i in range(int(edge["lanes:backward"])):
+            way.channels.append(Road(None, "in" if way_out else "out"))
+        for i in range(int(edge["lanes:forward"])):
+            way.channels.append(Road(None, "out" if way_out else "in"))
+
+def createUndirectedLanes(edge, way, way_out):
+    for i in range(int(edge["lanes"])):
+        if edge["highway"]=="service" and edge["psv"]=="yes":
+            way.channels.append(Bus(None, "out" if way_out else "in"))
+        else:
+            way.channels.append(Road(None, "out" if way_out else "in"))
+
+def createLane(type, way, way_out):
+    if type == "Road":
+        way.channels.append(Road(None, "out" if way_out else "in"))
