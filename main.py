@@ -334,6 +334,8 @@ crossings_desc = []
 
 for branch in crossroad.branches:
 
+    number = NO(branch.number).dOpt({"nat": True})
+
     name = " ".join(branch.street_name)
     crosswalks = []
 
@@ -385,7 +387,7 @@ for branch in crossroad.branches:
     # TODO
     # add, for islands, if difficult movements need to be made
         
-    crossings_desc.append("La branche %s %s. %s"%(name, "se traverse en %s fois"%jsRealB(n_crosswalks) if len(crosswalks) else "ne se traverse pas", crossing_desc))
+    crossings_desc.append("La branche numéro %s %s. %s"%(jsRealB(number), "se traverse en %s fois"%jsRealB(n_crosswalks) if len(crosswalks) else "ne se traverse pas", crossing_desc))
 
 #
 # Print description
