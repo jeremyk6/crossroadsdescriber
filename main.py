@@ -128,7 +128,11 @@ for branch in seg_crossroad.branches:
         elif "lanes" in edge:
             createUndirectedLanes(edge, way, way_out)
         else :
-            createLane("Road", way, way_out)
+            if "oneway" in edge and edge["oneway"] == "no":
+                createLane("Road", way, way_out)
+                createLane("Road", way, not way_out)
+            else:
+                createLane("Road", way, way_out)
 
         # does it have sidewalks (default : yes)
         # bug in lanes with sidewalks, to solve later
