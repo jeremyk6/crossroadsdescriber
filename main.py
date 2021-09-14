@@ -155,6 +155,8 @@ for branch in seg_crossroad.branches:
 branches.sort(key=lambda b: b.angle)
 
 # give name to branches
+# direction : unused for now
+"""
 print("This crossroad has %s branches. Name them according to their clock order, starting from 12': "%len(branches))
 for branch in branches:
     print("For the branch named %s at %s':"%(branch.street_name, branch.angle))
@@ -162,6 +164,14 @@ for branch in branches:
     # format direction for the text generation
     direction = direction.split(" ")
     branch.direction = [direction.pop(0).lower()," ".join(direction)]
+    #format street name for the text generation
+    street_name = branch.street_name.split(" ")
+    branch.street_name = [street_name.pop(0).lower()," ".join(street_name)]
+"""
+
+# branch number : number branches according to their clockwise order
+for i, branch in enumerate(branches): 
+    branch.number = i+1
     #format street name for the text generation
     street_name = branch.street_name.split(" ")
     branch.street_name = [street_name.pop(0).lower()," ".join(street_name)]
@@ -198,6 +208,8 @@ general_desc = "Le carrefour à l'intersection %s est un carrefour à %s branche
 branches_desc = []
 for branch in crossroad.branches:
 
+    # direction : unused for now
+    """
     direction = PP(
         P("de"), 
         NP(
@@ -206,6 +218,10 @@ for branch in crossroad.branches:
             Q(branch.direction[1]) if len(branch.direction) > 1 else Q("")
         )
     )
+    """
+
+    # branch number
+    number = NO(branch.number).dOpt({"nat": True})
 
     name = " ".join(branch.street_name)
     
@@ -281,7 +297,7 @@ for branch in crossroad.branches:
             word += "s"
         channels_out_desc += " %s"%word
 
-    branch_desc = "La branche en direction %s qui s'appelle %s est composée %s : %s%s%s."%(jsRealB(direction), name, jsRealB(n_voies), channels_out_desc, ", et " if channels_in_desc and channels_out_desc else "", channels_in_desc)
+    branch_desc = "La branche numéro %s qui s'appelle %s est composée %s : %s%s%s."%(jsRealB(number), name, jsRealB(n_voies), channels_out_desc, ", et " if channels_in_desc and channels_out_desc else "", channels_in_desc)
 
     # post process to remove ':' and duplicate information if there's only one type of way in one direction
     branch_desc = branch_desc.split(" ")

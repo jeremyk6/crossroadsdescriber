@@ -16,6 +16,7 @@ class Branch():
 
     def __init__(self, id, angle, direction_name, street_name, ways):
         self.id = id
+        self.number = None
         self.angle = angle
         self.direction_name = direction_name
         self.street_name = street_name
