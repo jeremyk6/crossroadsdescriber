@@ -13,32 +13,33 @@ from lib.jsRealBclass import N,A,Pro,D,Adv,V,C,P,DT,NO,Q,  NP,AP,AdvP,VP,CP,PP,S
 import lib.crseg.segmentation as cs
 import osmnx as ox
 from config import *
-# Configure arg parser
 
+#
+# Configuration
+#
+
+# create / clean basic folder structure
+for dir in ["cache", "data", "output"] : shutil.rmtree(dir, ignore_errors=True), os.mkdir(dir)
+
+# configure arg parser
 parser = argparse.ArgumentParser(description="Build a basic description of the crossroad located at the requested coordinate.")
 parser.add_argument('-c', '--by-coordinates', nargs=2, help='Load input from OSM using the given latitude', type=float)
 args = parser.parse_args()
 
-#
-# OSMnx configuration
-#
-
-ox.config(use_cache=True, useful_tags_way = list(set(ox.settings.useful_tags_way + way_tags_to_keep)), useful_tags_node = list(set(ox.settings.useful_tags_node + node_tags_to_keep)))
+# use coordinates in parameters if presents, else use the coordinates of this intersection : https://www.openstreetmap.org/#map=19/45.77351/3.09015
+if args.by_coordinates:
+    latitude = args.by_coordinates[0]
+    longitude = args.by_coordinates[1]
+else:
+    latitude = 45.77351
+    longitude = 3.09015
 
 #
 # OSM data download
 #
 
-# clean cache folder
-shutil.rmtree("cache")
-
-if args.by_coordinates:
-    latitude = args.by_coordinates[0]
-    longitude = args.by_coordinates[1]
-else:
-    # Carrefour thèse 1
-    latitude = 45.77351
-    longitude = 3.09015
+# OSMnx configuration
+ox.config(use_cache=True, useful_tags_way = list(set(ox.settings.useful_tags_way + way_tags_to_keep)), useful_tags_node = list(set(ox.settings.useful_tags_node + node_tags_to_keep)))
 
 G = ox.graph_from_point((latitude, longitude), dist=150, network_type="all", retain_all=False, truncate_by_edge=True, simplify=False)
 
@@ -348,8 +349,6 @@ for branch in crossroad.branches:
         else:
             crossing_desc += "Il n'y a pas de bandes d'éveil de vigilance."
 
-    # TODO 
-        # TODO 
     # TODO 
     # Add bikeboxes sentence in outgoing lanes if any
 
