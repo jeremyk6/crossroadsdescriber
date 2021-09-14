@@ -305,8 +305,9 @@ for branch in crossroad.branches:
 
     # post process to remove ':' and duplicate information if there's only one type of way in one direction
     branch_desc = branch_desc.split(" ")
-    if "et" not in branch_desc:
+    if " et " not in branch_desc:
         i = branch_desc.index(":")
+        if branch_desc[i-2] == "d'une": branch_desc[i+1] = "d'une"
         branch_desc.pop(i-2)
         branch_desc.pop(i-2)
         branch_desc.pop(i-2)
