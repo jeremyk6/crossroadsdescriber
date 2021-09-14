@@ -43,7 +43,7 @@ ox.config(use_cache=True, useful_tags_way = list(set(ox.settings.useful_tags_way
 
 G = ox.graph_from_point((latitude, longitude), dist=150, network_type="all", retain_all=False, truncate_by_edge=True, simplify=False)
 
-# Graph segmentation (from https://gitlab.limos.fr/jmafavre/crossroads-segmentation/-/blob/master/src/get-crossroad-description.py)
+# graph segmentation (from https://gitlab.limos.fr/jmafavre/crossroads-segmentation/-/blob/master/src/get-crossroad-description.py)
 
 # remove sidewalks, cycleways
 G = cs.Segmentation.remove_footways_and_parkings(G, False)
@@ -63,10 +63,10 @@ os.system("clear")
 
 seg_crossroad = SegmentationReader("data/intersection.json").getCrossroads()[0]
 
-# Intersection center. Computed by mean coordinates, may use convex hull + centroid later
+# intersection center. Computed by mean coordinates, may use convex hull + centroid later
 crossroad_center = meanCoordinates(G, seg_crossroad.border_nodes)
 
-# Branch and ways creation
+# branch and ways creation
 id = 1
 branches = []
 for branch in seg_crossroad.branches:
@@ -102,36 +102,36 @@ for branch in seg_crossroad.branches:
 
             junction = Junction(node_id, node["x"], node["y"])
 
-            # Junction decoration with tags
+            # junction decoration with tags
             if node_id in seg_crossroad.border_nodes:
                 
-                # Is it a crosswalk ?
+                # is it a crosswalk ?
                 if "crossing" in node:
                     junction = createCrosswalk(junction, node)
 
-                # Is it a traffic light ?
+                # is it a traffic light ?
                 if "traffic_signals" in node:
                     junction = createTrafficSignal(junction, node)
                     
             junctions.append(junction)
 
-        # Ways creation
+        # ways creation
         way = Way(edge["osmid"], edge["name"], junctions, channels = [])
 
-        # If n2 is a border node, it means the way is drawn as outgoing from the direction.
+        # if n2 is a border node, it means the way is drawn as outgoing from the direction.
         way_out = True if n2 in seg_crossroad.border_nodes else False
 
-        # Does it have directed lanes ?
+        # does it have directed lanes ?
         if "lanes:backward" in edge and "lanes:forward" in edge:
             createDirectedLanes(edge, way, way_out)
-        # Does it have lanes ?
+        # does it have lanes ?
         elif "lanes" in edge:
             createUndirectedLanes(edge, way, way_out)
         else :
             createLane("Road", way, way_out)
 
-        # Does it have sidewalks (default : yes)
-        # Bug in lanes with sidewalks, to solvbe later
+        # does it have sidewalks (default : yes)
+        # bug in lanes with sidewalks, to solve later
         '''
         if "sidewalk" in edge:
             if edge["sidewalk"] == "yes":
@@ -144,17 +144,17 @@ for branch in seg_crossroad.branches:
 
         ways.append(way)
 
-    # Compute mean angle by branch
+    # compute mean angle by branch
     mean_angle = meanAngle(G, border_nodes, crossroad_center)
 
     branches.append(Branch(id, mean_angle, None, ways[0].name, ways))
 
     id += 1
 
-# Order branch by angle
+# order branch by angle
 branches.sort(key=lambda b: b.angle)
 
-# Give name to branches
+# give name to branches
 print("This crossroad has %s branches. Name them according to their clock order, starting from 12': "%len(branches))
 for branch in branches:
     print("For the branch named %s at %s':"%(branch.street_name, branch.angle))
@@ -166,15 +166,15 @@ for branch in branches:
     street_name = branch.street_name.split(" ")
     branch.street_name = [street_name.pop(0).lower()," ".join(street_name)]
     
-# Create crossroad
+# create crossroad
 crossroad = Intersection(None, branches)
 
 #
 # Text generation
+# ~~ Need a jsRealB server ~~
 #
-# Need a jsRealB server
-
 # General description
+#
 
 streets = map(list, unique(map(tuple, [branch.street_name for branch in crossroad.branches]))) # horrible syntax to remove duplicates
 s = CP(C("et"))
@@ -191,7 +191,9 @@ for street in streets:
     )
 general_desc = "Le carrefour à l'intersection %s est un carrefour à %s branches."%(jsRealB(s), len(crossroad.branches))
 
+#
 # Branches description
+#
 
 branches_desc = []
 for branch in crossroad.branches:
@@ -225,7 +227,7 @@ for branch in crossroad.branches:
     channels_in_desc = CP(C("et"))
     channels_out_desc = CP(C("et"))
 
-    # Count number of channels per type
+    # count number of channels per type
     channels_in = {}
     channels_out = {}
     for channel in channels:
@@ -281,7 +283,7 @@ for branch in crossroad.branches:
 
     branch_desc = "La branche en direction %s qui s'appelle %s est composée %s : %s%s%s."%(jsRealB(direction), name, jsRealB(n_voies), channels_out_desc, ", et " if channels_in_desc and channels_out_desc else "", channels_in_desc)
 
-    # Post process to remove ':' and duplicate information if there's only one type of way in one direction
+    # post process to remove ':' and duplicate information if there's only one type of way in one direction
     branch_desc = branch_desc.split(" ")
     if "et" not in branch_desc:
         i = branch_desc.index(":")
@@ -292,14 +294,22 @@ for branch in crossroad.branches:
     
     branches_desc.append(branch_desc)
 
+#
 # Traffic light cycle
-# Right turn on red are barely modelized in OSM, see https://wiki.openstreetmap.org/w/index.php?title=Red_turn&oldid=2182526
+# right turn on red are barely modelized in OSM, see https://wiki.openstreetmap.org/w/index.php?title=Red_turn&oldid=2182526
+#
+
 #TODO
 
+#
 # Attention points
+#
+
 # TODO
 
+#
 # Crossings descriptions
+#
 crossings_desc = []
 
 for branch in crossroad.branches:
@@ -350,14 +360,16 @@ for branch in crossroad.branches:
             crossing_desc += "Il n'y a pas de bandes d'éveil de vigilance."
 
     # TODO 
-    # Add bikeboxes sentence in outgoing lanes if any
+    # add bikeboxes sentence in outgoing lanes if any
 
     # TODO
-    # Add, for islands, if difficult movements need to be made
+    # add, for islands, if difficult movements need to be made
         
     crossings_desc.append("La branche %s %s. %s"%(name, "se traverse en %s fois"%jsRealB(n_crosswalks) if len(crosswalks) else "ne se traverse pas", crossing_desc))
 
+#
 # Print description
+#
 
 description = ""
 description += general_desc+"\n\n"
@@ -374,12 +386,12 @@ for crossing_desc in crossings_desc:
 
 print("\n"+description)
 
-# Description output
+# description output
 output = open("output/description.txt", "w")
 output.write(description)
 output.close()
 
-# Display crossroad and save image
+# display crossroad and save image
 cr = seg.get_crossroad(longitude, latitude)
 ec = seg.get_regions_colors_from_crossroad(cr)
 nc = seg.get_nodes_regions_colors_from_crossroad(cr)
