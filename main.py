@@ -127,7 +127,7 @@ for branch in seg_crossroad.branches:
         elif "lanes" in edge:
             createUndirectedLanes(edge, way, way_out)
         else :
-            createLane("road", way, way_out)
+            createLane("Road", way, way_out)
 
         # Does it have sidewalks (default : yes)
         # Bug in lanes with sidewalks, to solvbe later
@@ -312,48 +312,49 @@ for branch in crossroad.branches:
             if "Crosswalk" in junction.type:
                 crosswalks.append(junction)
 
+    crossing_desc = ""
     if len(crosswalks):
-        crossing_desc = ""
-        if len(crosswalks):
 
-            n_crosswalks = NP(NO(len(crosswalks)).dOpt({"nat": True})).g("f") # followed by "fois", which is f.
-            n_podotactile = 0
-            n_ptl = 0
-            n_ptl_sound = 0
-            incorrect = False
-            for crosswalk in crosswalks:
-                if crosswalk.cw_tactile_paving != "no":
-                    n_podotactile += 1
-                if crosswalk.cw_tactile_paving == "incorrect":
-                    incorrect = True
-                if "Pedestrian_traffic_light" in crosswalk.type:
-                    n_ptl += 1
-                    if crosswalk.ptl_sound == "yes":
-                        n_ptl_sound += 1
+        n_crosswalks = NP(NO(len(crosswalks)).dOpt({"nat": True})).g("f") # followed by "fois", which is f.
+        n_podotactile = 0
+        n_ptl = 0
+        n_ptl_sound = 0
+        incorrect = False
+        for crosswalk in crosswalks:
+            if crosswalk.cw_tactile_paving != "no":
+                n_podotactile += 1
+            if crosswalk.cw_tactile_paving == "incorrect":
+                incorrect = True
+            if "Pedestrian_traffic_light" in crosswalk.type:
+                n_ptl += 1
+                if crosswalk.ptl_sound == "yes":
+                    n_ptl_sound += 1
 
-            crossing_desc = "Les passages piétons "
-            if n_ptl:
-                if n_podotactile == len(crosswalks):
-                    crossing_desc += "sont tous protégés par un feu. "
-                else :
-                    crossing_desc += "ne sont pas tous protégés par un feu. "
-            else:
-                crossing_desc += "ne sont pas protégés par des feux. "
-                
+        crossing_desc = "Les passages piétons "
+        if n_ptl:
+            if n_podotactile == len(crosswalks):
+                crossing_desc += "sont tous protégés par un feu. "
+            else :
+                crossing_desc += "ne sont pas tous protégés par un feu. "
+        else:
+            crossing_desc += "ne sont pas protégés par des feux. "
             
-            if n_podotactile:
-                if n_podotactile == len(crosswalks) and incorrect == False:
-                    crossing_desc += "Il y a des bandes d'éveil de vigilance."
-                else:
-                    crossing_desc += "Il manque des bandes d'éveil de vigilance ou celles-ci sont dégradées."
+        
+        if n_podotactile:
+            if n_podotactile == len(crosswalks) and incorrect == False:
+                crossing_desc += "Il y a des bandes d'éveil de vigilance."
             else:
-                crossing_desc += "Il n'y a pas de bandes d'éveil de vigilance."
+                crossing_desc += "Il manque des bandes d'éveil de vigilance ou celles-ci sont dégradées."
+        else:
+            crossing_desc += "Il n'y a pas de bandes d'éveil de vigilance."
 
+    # TODO 
         # TODO 
-        # Add bikeboxes sentence in outgoing lanes if any
+    # TODO 
+    # Add bikeboxes sentence in outgoing lanes if any
 
-        # TODO
-        # Add, for islands, if difficult movements need to be made
+    # TODO
+    # Add, for islands, if difficult movements need to be made
         
     crossings_desc.append("La branche %s %s. %s"%(name, "se traverse en %s fois"%jsRealB(n_crosswalks) if len(crosswalks) else "ne se traverse pas", crossing_desc))
 

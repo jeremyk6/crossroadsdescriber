@@ -187,32 +187,29 @@ def createTrafficSignal(junction, node):
     junction = Traffic_light(junction, None, tl_direction)
     return junction
 
+def createLane(type, way, way_out):
+    if type == "Road":
+        way.channels.append(Road(None, "out" if way_out else "in"))
+    if type == "Bus":
+        way.channels.append(Bus(None, "out" if way_out else "in"))
+
 def createDirectedLanes(edge, way, way_out):
     # does it have designated bus lanes ?
     if "psv:lanes:backward" in edge and "psv:lanes:forward" in edge:
         for lane in edge["psv:lanes:backward"].split("|"):
-            if lane == "designated":
-                way.channels.append(Bus(None, "in" if way_out else "out"))
-            else:
-                way.channels.append(Road(None, "in" if way_out else "out"))
+            type = "Road"
+            if lane == "designated": type = "Bus",
+            createLane(type, way, not way_out)
         for lane in edge["psv:lanes:forward"].split("|"):
-            if lane == "designated":
-                way.channels.append(Bus(None, "out" if way_out else "in"))
-            else:
-                way.channels.append(Road(None, "out" if way_out else "in"))
+            type = "Road"
+            if lane == "designated": type = "Bus"
+            createLane(type, way, way_out)
     else:
-        for i in range(int(edge["lanes:backward"])):
-            way.channels.append(Road(None, "in" if way_out else "out"))
-        for i in range(int(edge["lanes:forward"])):
-            way.channels.append(Road(None, "out" if way_out else "in"))
+        for i in range(int(edge["lanes:backward"])): createLane("Road", way, not way_out)
+        for i in range(int(edge["lanes:forward"])): createLane("Road", way, way_out)
 
 def createUndirectedLanes(edge, way, way_out):
     for i in range(int(edge["lanes"])):
-        if edge["highway"]=="service" and edge["psv"]=="yes":
-            way.channels.append(Bus(None, "out" if way_out else "in"))
-        else:
-            way.channels.append(Road(None, "out" if way_out else "in"))
-
-def createLane(type, way, way_out):
-    if type == "Road":
-        way.channels.append(Road(None, "out" if way_out else "in"))
+        type = "Road"
+        if edge["highway"]=="service" and edge["psv"]=="yes": type = "Bus"
+        createLane(type, way, way_out)
