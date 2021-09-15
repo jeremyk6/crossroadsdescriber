@@ -27,6 +27,8 @@ way_tags_to_keep = [
     'sidewalk:both',
     # public transportation informations,
     'bus',
+    'busway:right',
+    'busway:left',
     'psv',
     'psv:lanes:backward',
     'psv:lanes:forward'
