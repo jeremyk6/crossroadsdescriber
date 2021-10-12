@@ -1,5 +1,6 @@
 import osmnx as ox
 
+from . import region as r
 
 class Util:
 
@@ -106,3 +107,32 @@ class Util:
                         return True
 
         return False
+
+    def has_non_labeled_adjacent_edge(G, n):
+        for nb in G.neighbors(n):
+            if G[n][nb][0][r.Region.label_region] == -1:
+                return True
+        return False
+
+    def estimate_edge_width(G, edge):
+        gEdge = G[edge[0]][edge[1]][0]
+        if "width" in gEdge:
+            return float(gEdge["width"])
+        elif "lanes" in gEdge:
+            nb = int(gEdge["lanes"])
+        else:
+            if "oneway" in gEdge:
+                nb = 1
+            else:
+                nb = 2
+        
+        if "highway" in gEdge:
+            if gEdge["highway"] in ["motorway", "trunk"]:
+                width = 3.5
+            elif gEdge["highway"] in ["primary", "secondary"]:
+                width = 3.25
+            else:
+                width = 3
+        else:
+            width = 3
+        return nb * width

@@ -11,17 +11,38 @@ from . import crossroad as cr
 from . import region as rg
 from . import regionfactory as rf
 from . import reliability as rel
+from . import crossroad_connections as cc
 
 class Segmentation:
 
-    def __init__(self, G, init=True):
+    def __init__(self, G, init=True, connection_intensity = 2, max_cycle_elements = 5):
         self.G = G
         self.regions = {}
+        self.connection_intensity = connection_intensity
+        self.max_cycle_elements = max_cycle_elements
         random.seed()
         if init:
             rel.Reliability.init_attr(self.G)
         else:
             self.regions = rf.RegionFactory.rebuild_regions_from_tags(self.G)
+
+
+    def set_tags_only_regions(self):
+        # clear tags
+        for n in self.G.nodes:
+            self.G.nodes[n][rg.Region.label_region] = -1
+        for u, v, a in self.G.edges(data = True):
+            self.G[u][v][0][rg.Region.label_region] = -1
+
+        # set tags wrt crossroad regions
+        for rid in self.regions:
+            region = self.regions[rid]
+            if region.is_crossroad():
+                for n in region.nodes:
+                    self.G.nodes[n][rg.Region.label_region] = rid
+                for e in region.edges:
+                    self.G[e[0]][e[1]][0][rg.Region.label_region] = rid
+                
 
 
     def process(self):
@@ -51,21 +72,91 @@ class Segmentation:
                 del self.regions[o.id]
 
         # add inner paths and missing boundaries
-        for rid in self.regions:
-            region = self.regions[rid]
-            if region.is_crossroad():
-                region.add_missing_paths()
-            
+        self.add_missing_paths()
+        
+        # build links between regions
+        links = rf.RegionFactory.build_links_between_crossings(self.G, self.regions)
+        self.regions.update(links)
+        self.set_tags_only_regions()
 
-        # TODO: second pass to merge main crossroad and small adjacent parts (such as access branches with forks)
+        # merge crossings
+        self.merge_linked_crossroads()
 
-        # TODO: add inner paths and missing boundaries (again)
+        # add inner paths and missing boundaries (again)
+        self.add_missing_paths(False)
 
         # create branch regions
         for rid in self.regions:
-            self.regions[rid].compute_branches()
+            if self.regions[rid].is_crossroad():
+                self.regions[rid].compute_branches()
+        
+        for rid in self.inner_regions:
+            self.inner_regions[rid].compute_branches()
             
 
+    def merge_linked_crossroads(self):
+        self.inner_regions = {}
+        newIDs = {}
+
+        cconnections = cc.CrossroadConnections(self.regions, self.connection_intensity)
+
+        # merge bi-connected crossings
+        for pairs in cconnections.get_pairs():
+            id1 = pairs[0] if pairs[0] in self.regions else newIDs[pairs[0]]
+            id2 = pairs[1] if pairs[1] in self.regions else newIDs[pairs[1]]
+            if id1 != id2:
+                # add the two regions to the inner regions (of a bigger one)
+                self.add_inner_region(self.regions[id1])
+                self.add_inner_region(self.regions[id2])
+                # add paths that are connecting these two regions
+                self.regions[id1].add_paths([x[0] for x in pairs[2]])
+                # merge the two regions
+                self.regions[id1].merge([self.regions[id2]])
+                # remove the old one
+                del self.regions[id2]
+                # update IDs
+                newIDs[id2] = id1
+                for nid in newIDs:
+                    if newIDs[nid] == id2:
+                        newIDs[nid] = id1
+
+        cycles = cconnections.get_cycles(self.max_cycle_elements)
+
+        # merge multi crossings (triangles, rings, etc)
+        for cycle in cycles:
+            cWithIDs = [cr if cr[0] in self.regions else (newIDs[cr[0]], cr[1]) for cr in cycle][:-1]
+            ids = [x[0] for x in cWithIDs]
+            
+            if len(set(ids)) > 1:
+                firstID = ids[0]
+                # add all regions as inner regions (of a bigger one)
+                for id in ids:
+                    self.add_inner_region(self.regions[id])
+
+                for cr1, cr2 in zip(cWithIDs, cWithIDs[1:]):
+                    id2 = newIDs[cr2[0]] if cr2[0] in newIDs else cr2[0]
+
+                    # add paths that connects cr1 and cr2
+                    self.regions[firstID].add_paths([x[0] for x in cr2[1]])
+                    if id2 != firstID:
+                        self.regions[firstID].merge([self.regions[id2]])
+                        del self.regions[id2]
+                        newIDs[id2] = firstID
+                        for nid in newIDs:
+                            if newIDs[nid] == id2:
+                                newIDs[nid] = firstID
+
+
+    def add_inner_region(self, region):
+        # clone the given region and add it to the inner_regions structure
+        newRegion = rf.RegionFactory.clone(region)
+        self.inner_regions[newRegion.id] = newRegion
+
+    def add_missing_paths(self, boundaries = True):
+        for rid in self.regions:
+            region = self.regions[rid]
+            if region.is_crossroad():
+                region.add_missing_paths(boundaries = boundaries)
 
 
     def in_crossroad_region(self, e):
@@ -276,84 +367,124 @@ class Segmentation:
 
         return pd.Series(result)
 
+    # input: a list of crossroads (main crossroad and possibly contained crossroads)
     def get_regions_colors_from_crossroad(self, cr):
+        crids = [ c.id for c in cr ]
+        mainCR = max(cr, key=lambda x: len(x.nodes))
+        maxID = max(crids)
         result = {}
         color = {}
         for e in self.G.edges:
             tag = self.G[e[0]][e[1]][e[2]][rg.Region.label_region]
-            if tag != cr.id:
-                bid = cr.get_branch_id(e)
+            if not tag in crids:
+                # check if it's a branch of the main crossroad
+                bid = mainCR.get_branch_id(e)
                 if bid == -1:
                     result[e] = (0.5, 0.5, 0.5, 0.1)
                 else:
-                    tag = cr.id + bid + 1
+                    tag = maxID + bid + 1
                     if not tag in color:
                         color[tag] = Segmentation.random_color()
                     result[e] = color[tag]
             else:
-                if not tag in color:
-                    color[tag] = (1, 0, 0, 1)
-                result[e] = color[tag]
+                ncrs = len([ c for c in cr if c.has_edge(e) ])
+                result[e] = (math.sqrt(ncrs / len(crids)), 0, 0, 1)
         return pd.Series(result)
 
+    # input: a list of crossroads (main crossroad and possibly contained crossroads)
     def get_nodes_regions_colors_from_crossroad(self, cr):
+        crids = [ c.id for c in cr ]
+        mainCR = max(cr, key=lambda x: len(x.nodes))
         result = {}
         for n in self.G.nodes:
             if len(list(self.G.neighbors(n))) <= 2:
                 result[n] = (0, 0, 0, 0)
             else:
                 label = self.G.nodes[n][rg.Region.label_region]
-                if label != cr.id:
+                if not label in crids:
                     result[n] = (0, 0, 0, 0)
                 else:
-                    nb_edge_in_region = len([nb for nb in self.G[n] if self.G[n][nb][0][rg.Region.label_region] == label])
-                    if nb_edge_in_region == 0:
-                        result[n] = Segmentation.random_color()
-                    else:
+                    # get regions that contains this node with no adjacent edge
+                    ncrn = len([ r for r in cr if r.has_node(n) and len(r.edges_with_node(n)) == 0])
+                    if ncrn == 0:
                         result[n] = (0, 0, 0, 0)
+                    else:
+                        result[n] = (math.sqrt(ncrn / len(crids)), 0, 0, 1)
 
         return pd.Series(result)
 
     ######################### text descriptions ########################
 
-    def get_crossroad(self, longitude, latitude):
+    # return a list of crossroads (main crossroad and possibly contained crossroads)
+    def get_crossroad(self, longitude, latitude, multiscale = False):
         distance = -1
         middle = -1
         for rid in self.regions:
-            region = self.regions[rid]
-            x1 = self.G.nodes[region.get_center()]["x"]
-            y1 = self.G.nodes[region.get_center()]["y"]
-            d = ox.distance.great_circle_vec(lat1=y1, lng1=x1, lat2=latitude, lng2=longitude)
-            if distance < 0 or d < distance:
-                distance = d
-                middle = rid
-        return self.regions[middle]
+            if self.regions[rid].is_crossroad():
+                region = self.regions[rid]
+                x1 = self.G.nodes[region.get_center()]["x"]
+                y1 = self.G.nodes[region.get_center()]["y"]
+                d = ox.distance.great_circle_vec(lat1=y1, lng1=x1, lat2=latitude, lng2=longitude)
+                if distance < 0 or d < distance:
+                    distance = d
+                    middle = rid
 
-    def to_text(self, longitude, latitude):
-        return self.get_crossroad(longitude, latitude).to_text()
+        if multiscale:
+            result = []
+            result.append(self.regions[middle])
+            for rid in self.inner_regions:
+                if self.regions[middle].contains(self.inner_regions[rid]):
+                    result.append(self.inner_regions[rid])
+            return result
+        else:
+            return [self.regions[middle]]
 
-    def to_text_all(self):
+    def to_text(self, longitude, latitude, multiscale = False):
+        cs = self.get_crossroad(longitude, latitude, multiscale)
+        result = ""
+        for i, c in enumerate(cs):
+            if i != 0:
+                result += "\n\n"
+            result += c.to_text()
+        return result
+
+    def to_text_all(self, multiscale = False):
         result = ""
         for rid in self.regions:
-            result += self.regions[rid].to_text()
+            if self.regions[rid].is_crossroad():
+                result += self.regions[rid].to_text()
+                result += "\n"
+                result += "\n"
+
+        if multiscale:
+            result = "Inner crossroads:"
             result += "\n"
-            result += "\n"
+            for rid in self.inner_regions:
+                result += self.inner_regions[rid].to_text()
+                result += "\n"
+                result += "\n"
         return result
 
     ######################### json descriptions ########################
 
-    def to_json(self, filename, longitude, latitude):
-        data = self.get_crossroad(longitude, latitude).to_json_data()
+    def to_json(self, filename, longitude, latitude, multiscale = False):
+        data = [x.to_json_data() for x in self.get_crossroad(longitude, latitude, multiscale)]
 
         with open(filename, 'w') as outfile:
             json.dump(data, outfile)
 
 
-    def to_json_all(self, filename):
+    def to_json_all(self, filename, multiscale = False):
         data = []
         for rid in self.regions:
-            entry = self.regions[rid].to_json_data()
-            data.append(entry)
+            if self.regions[rid].is_crossroad():
+                entry = self.regions[rid].to_json_data()
+                data.append(entry)
+        
+        if multiscale:
+            for rid in self.inner_regions:
+                entry = self.inner_regions[rid].to_json_data()
+                data.append(entry)
 
         with open(filename, 'w') as outfile:
             json.dump(data, outfile)

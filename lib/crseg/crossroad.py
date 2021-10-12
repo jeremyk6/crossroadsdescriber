@@ -44,7 +44,7 @@ class Crossroad(r.Region):
         return "* id: %s\n* center: %s\n* lanes: %s\n* branches: %s" % (self.id, self.center, len(self.lanes), len(self.branches))
 
     def __repr__(self):
-        return "id: %s, center: %s" % (self.id, self.center)
+        return "id: %s, center: %s, #nodes: %s" % (self.id, self.center, len(self.nodes))
 
     def get_center(self):
         return self.center
@@ -427,12 +427,12 @@ class Crossroad(r.Region):
 
     # add to the current crossing the direct paths that connect the given points
     def add_direct_paths_between_nodes(self, points):
-
+        # TODO: avoid too long paths
         for p1 in points:
             for n in self.G.neighbors(p1):
                 if not self.has_edge((p1, n)):
                     path = u.Util.get_path_to_biffurcation(self.G, p1, n)
-                    if path[len(path) - 1] in points:
+                    if path[len(path) - 1] in points and u.Util.length(self.G, path) < self.diameter():
                         self.add_path(path)
 
     # merge all given regions with the current one
@@ -466,20 +466,22 @@ class Crossroad(r.Region):
         self.build_lanes_description()
 
     # add missing paths (inner paths and paths to boundaries)
-    def add_missing_paths(self, scale = 2):
+    def add_missing_paths(self, scale = 2, boundaries = True):
         # add inner paths
         self.add_direct_paths_between_nodes(self.nodes)
 
-
-        # add paths to missing boundaries within the given scale
-        max_length = scale * self.get_radius()
-        for p1 in self.nodes:
-            for n in self.G.neighbors(p1):
-                if not self.has_edge((p1, n)):
-                    path = rl.Reliability.get_path_to_boundary(self.G, p1, n)
-                    # find a boundary node inside the path and cut it
-                    if len(path) > 0 and u.Util.length(self.G, path) < max_length:
-                        self.add_path(path)
+        if boundaries:
+            # add paths to missing boundaries within the given scale
+            max_length = scale * self.get_radius()
+            for p1 in self.nodes:
+                for n in self.G.neighbors(p1):
+                    if not self.has_edge((p1, n)) and self.G[p1][n][0][r.Region.label_region] == -1:
+                        path = rl.Reliability.get_path_to_boundary(self.G, p1, n)
+                        while len(path) > 2 and self.G[path[-2]][path[-1]][0][r.Region.label_region] != -1:
+                            path.pop()
+                        # find a boundary node inside the path and cut it
+                        if len(path) > 0 and u.Util.length(self.G, path) < max_length:
+                            self.add_path(path)
 
         # finally rebuild the branch descriptions
         self.build_lanes_description()
@@ -520,4 +522,15 @@ class Crossroad(r.Region):
 
         return -1
 
+    # get the maximum estimated width of a branch
+    def max_branch_width(self):
+        if not hasattr(self, "branches"):
+            self.compute_branches()
+        return max([self.estimate_branch_width(b) for b in self.branches])
 
+
+    def estimate_branch_width(self, branch):
+        return sum([self.estimate_lane_width(l) for l in branch])
+            
+    def estimate_lane_width(self, lane):
+        return u.Util.estimate_edge_width(self.G, lane.edge)
