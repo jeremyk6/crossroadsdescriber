@@ -116,6 +116,9 @@ for branch in seg_crossroad.branches:
             junctions.append(junction)
 
         # ways creation
+        # hack : if an edge does not have a name, we name it "rue qui n'a pas de nom"
+        if not "name" in edge:
+            edge["name"] = "rue qui n'a pas de nom"
         way = Way(edge["osmid"], edge["name"], junctions, channels = [])
 
         # if n2 is a border node, it means the way is drawn as outgoing from the direction.

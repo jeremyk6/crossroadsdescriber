@@ -212,5 +212,5 @@ def createDirectedLanes(edge, way, way_out):
 def createUndirectedLanes(edge, way, way_out):
     for i in range(int(edge["lanes"])):
         type = "Road"
-        if edge["highway"]=="service" and edge["psv"]=="yes": type = "Bus"
+        if edge["highway"]=="service" and "psv" in edge and edge["psv"]=="yes": type = "Bus"
         createLane(type, way, way_out)
