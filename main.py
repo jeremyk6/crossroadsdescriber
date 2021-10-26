@@ -322,6 +322,10 @@ for branch in crossroad.branches:
         branch_desc.pop(i-2)
         branch_desc.pop(i-2)
     branch_desc = " ".join(branch_desc)
+
+    # hacks to prettify sentences
+    branch_desc = branch_desc.replace("qui s'appelle rue qui n'a pas de nom", "qui n'a pas de nom")
+    branch_desc = branch_desc.replace("de une voie", "d'une voie")
     
     branches_desc.append(branch_desc)
 
