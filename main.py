@@ -113,7 +113,7 @@ for branch in seg_crossroad.branches:
             if node_id in seg_crossroad.border_nodes:
                 
                 # is it a crosswalk ?
-                if "crossing" in node:
+                if "crossing" in node and node["crossing"] != "no":
                     junction = createCrosswalk(junction, node)
 
                 # is it a traffic light ?
