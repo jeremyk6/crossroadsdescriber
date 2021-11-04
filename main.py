@@ -380,7 +380,7 @@ for branch in crossroad.branches:
 
         crossing_desc = "Les passages piétons "
         if n_ptl:
-            if n_podotactile == len(crosswalks):
+            if n_ptl == len(crosswalks):
                 crossing_desc += "sont tous protégés par un feu. "
             else :
                 crossing_desc += "ne sont pas tous protégés par un feu. "
