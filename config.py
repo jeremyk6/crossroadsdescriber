@@ -2,7 +2,7 @@ way_tags_to_keep = [
     # general informations,
     'name',
     'highway',
-    'fooway',
+    'footway',
     'oneway',
     'surface',
     # lanes informations
