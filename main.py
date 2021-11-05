@@ -22,6 +22,7 @@ from config import *
 parser = argparse.ArgumentParser(description="Build a basic description of the crossroad located at the requested coordinate.")
 parser.add_argument('-c', '--by-coordinates', nargs=2, help='Load input from OSM using the given latitude', type=float)
 parser.add_argument('-nc', '--no-clear-cache', help='Do not clear cached datas', action='store_true')
+parser.add_argument('-o', '--output', nargs=1, help='Output a JSON file.', type=str)
 args = parser.parse_args()
 
 # create / clean basic folder structure
@@ -427,6 +428,10 @@ print("\n"+description)
 output = open("output/description.txt", "w")
 output.write(description)
 output.close()
+
+# json output
+if args.output:
+    outputJSON("output/"+args.output[0], branches, general_desc, branches_desc, crossings_desc)
 
 # display crossroad and save image
 cr = seg.get_crossroad(longitude, latitude)
