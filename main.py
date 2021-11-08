@@ -425,7 +425,7 @@ output.close()
 
 # json output
 if args.output:
-    outputJSON("output/"+args.output[0], branches, general_desc, branches_desc, crossings_desc)
+    outputJSON("output/"+args.output[0], {**crossroad_inner_nodes, **crossroad_border_nodes}, branches, general_desc, branches_desc, crossings_desc)
 
 # display crossroad and save image
 cr = seg.get_crossroad(longitude, latitude)

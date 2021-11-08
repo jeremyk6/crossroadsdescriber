@@ -64,13 +64,12 @@ def meanAngle(G, border_nodes, crossroad_center):
     mean_angle /= len(border_nodes)
     return mean_angle
 
-def outputJSON(filename, branches, general_desc, branches_desc, crossings_desc):
+def outputJSON(filename, junctions, branches, general_desc, branches_desc, crossings_desc):
     data = {}
     
     data["introduction"] = general_desc
     
     data["branches"] = []
-    crosswalks = []
     for (branch, branch_desc, crossing_desc) in zip(branches, branches_desc, crossings_desc):
         crossing_desc = crossing_desc.split(" ")[4:]
         crossing_desc.insert(0, "Elle")
@@ -81,10 +80,11 @@ def outputJSON(filename, branches, general_desc, branches_desc, crossings_desc):
             "nodes" : nodes,
             "text" : branch_desc + " " + " ".join(crossing_desc)
         })
-        for way in branch.ways:  
-            for junction in way.junctions:
-                if "Crosswalk" in junction.type:
-                    crosswalks.append(junction)
+    
+    crosswalks = []
+    for junction in junctions.values():
+        if "Crosswalk" in junction.type:
+            crosswalks.append(junction)
 
     data["crossings"] = []
     for crosswalk in crosswalks:
