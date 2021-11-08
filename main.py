@@ -74,6 +74,14 @@ seg_crossroad = SegmentationReader("data/intersection.json").getCrossroads()[0]
 # intersection center. Computed by mean coordinates, may use convex hull + centroid later
 crossroad_center = meanCoordinates(G, seg_crossroad.border_nodes)
 
+crossroad_inner_nodes = {}
+crossroad_border_nodes = {}
+
+for node_id in seg_crossroad.inner_nodes:
+    crossroad_inner_nodes[node_id] = createJunction(node_id, G.nodes[node_id])
+for node_id in seg_crossroad.border_nodes:
+    crossroad_border_nodes[node_id] = createJunction(node_id, G.nodes[node_id])
+
 # branch and ways creation
 id = 1
 branches = []
@@ -107,21 +115,7 @@ for branch in seg_crossroad.branches:
         # Junctions creation
         junctions = []
         for node_id, node in [ [n1,G.nodes[n1]] , [n2,G.nodes[n2]] ]:
-
-            junction = Junction(node_id, node["x"], node["y"])
-
-            # junction decoration with tags
-            if node_id in seg_crossroad.border_nodes:
-                
-                # is it a crosswalk ?
-                if "crossing" in node and node["crossing"] != "no":
-                    junction = createCrosswalk(junction, node)
-
-                # is it a traffic light ?
-                if "traffic_signals" in node:
-                    junction = createTrafficSignal(junction, node)
-                    
-            junctions.append(junction)
+            junctions.append(createJunction(node_id, node))
 
         # ways creation
         # hack : if an edge does not have a name, we name it "rue qui n'a pas de nom"

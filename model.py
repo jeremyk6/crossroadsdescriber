@@ -188,6 +188,19 @@ def createTrafficSignal(junction, node):
     junction = Traffic_light(junction, None, tl_direction)
     return junction
 
+def createJunction(node_id, node):
+    junction = Junction(node_id, node["x"], node["y"])
+        
+    # is it a crosswalk ?
+    if "crossing" in node and node["crossing"] != "no":
+        junction = createCrosswalk(junction, node)
+
+    # is it a traffic light ?
+    if "traffic_signals" in node:
+        junction = createTrafficSignal(junction, node)
+
+    return junction
+
 def createLane(type, way, way_out):
     if type == "Road":
         way.channels.append(Road(None, "out" if way_out else "in"))
