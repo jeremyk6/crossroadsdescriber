@@ -112,7 +112,7 @@ def outputJSON(filename, branches, general_desc, branches_desc, crossings_desc):
         })
 
     with open(filename, 'w') as outfile:
-        json.dump(data, outfile)
+        json.dump(data, outfile, ensure_ascii=False)
 
 
 # Translate words
