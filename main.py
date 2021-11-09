@@ -74,15 +74,21 @@ seg_crossroad = SegmentationReader("data/intersection.json").getCrossroads()[0]
 # intersection center. Computed by mean coordinates, may use convex hull + centroid later
 crossroad_center = meanCoordinates(G, seg_crossroad.border_nodes)
 
+# crossroad nodes creation
 crossroad_inner_nodes = {}
 crossroad_border_nodes = {}
-
 for node_id in seg_crossroad.inner_nodes:
     crossroad_inner_nodes[node_id] = createJunction(node_id, G.nodes[node_id])
 for node_id in seg_crossroad.border_nodes:
     crossroad_border_nodes[node_id] = createJunction(node_id, G.nodes[node_id])
 
-# branch and ways creation
+#crossroad edges creation
+crossroad_edges = {}
+for edge in seg_crossroad.edges_by_nodes:
+    edge_id = "%s%s"%(edge[0],edge[1])
+    crossroad_edges[edge_id] = createWay(edge, G)
+
+# branch creation
 id = 1
 branches = []
 for branch in seg_crossroad.branches:
@@ -93,65 +99,15 @@ for branch in seg_crossroad.branches:
 
     for edge in branch.edges_by_nodes:
 
-        n1 = edge[0]
-        n2 = edge[1]
-
         # keep border nodes
-        if n1 in seg_crossroad.border_nodes:
-            border_nodes.append(n1)
-        if n2 in seg_crossroad.border_nodes:
-            border_nodes.append(n2)
+        if edge[0] in seg_crossroad.border_nodes:
+            border_nodes.append(edge[0])
+        if edge[1] in seg_crossroad.border_nodes:
+            border_nodes.append(edge[1])
 
-        # try both order of the edge in case of oneway
-        try:
-            edge = G[n1][n2][0]
-        except:
-            n1,n2 = n2,n1
-            edge = G[n1][n2][0]
-        n1,n2 = getOriginalEdgeDirection(edge["osmid"], [n1,n2])
-        
-        # Note : access node attributes
-        # ex. for x : G.nodes[n1].x
-        # Junctions creation
-        junctions = []
-        for node_id, node in [ [n1,G.nodes[n1]] , [n2,G.nodes[n2]] ]:
-            junctions.append(createJunction(node_id, node))
-
-        # ways creation
-        # hack : if an edge does not have a name, we name it "rue qui n'a pas de nom"
-        if not "name" in edge:
-            edge["name"] = "rue qui n'a pas de nom"
-        way = Way(edge["osmid"], edge["name"], junctions, channels = [])
-
-        # if n2 is a border node, it means the way is drawn as outgoing from the direction.
-        way_out = True if n2 in seg_crossroad.border_nodes else False
-
-        # does it have directed lanes ?
-        if "lanes:backward" in edge and "lanes:forward" in edge:
-            createDirectedLanes(edge, way, way_out)
-        # does it have lanes ?
-        elif "lanes" in edge:
-            createUndirectedLanes(edge, way, way_out)
-        else :
-            if "oneway" in edge and edge["oneway"] == "no":
-                createLane("Road", way, way_out)
-                createLane("Road", way, not way_out)
-            else:
-                createLane("Road", way, way_out)
-
-        # does it have sidewalks (default : yes)
-        # bug in lanes with sidewalks, to solve later
-        '''
-        if "sidewalk" in edge:
-            if edge["sidewalk"] == "yes":
-                way.channels.insert(0, Sidewalk(None, None))
-                way.channels.append(Sidewalk(None, None))
-        else:
-                way.channels.insert(0, Sidewalk(None, None))
-                way.channels.append(Sidewalk(None, None))
-        '''
-
-        ways.append(way)
+        edge_id = "%s%s"%(edge[0],edge[1])
+        crossroad_edges[edge_id] = createWay(edge, G, seg_crossroad.border_nodes)
+        ways.append(crossroad_edges[edge_id])
 
     # compute mean angle by branch
     mean_angle = meanAngle(G, border_nodes, crossroad_center)

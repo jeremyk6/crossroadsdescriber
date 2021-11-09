@@ -1,3 +1,5 @@
+from utils import *
+
 #
 # Intersection
 #
@@ -227,3 +229,60 @@ def createUndirectedLanes(edge, way, way_out):
         type = "Road"
         if edge["highway"]=="service" and "psv" in edge and edge["psv"]=="yes": type = "Bus"
         createLane(type, way, way_out)
+
+def createWay(edge, G, border_nodes=[]):
+    n1 = edge[0]
+    n2 = edge[1]
+
+    # try both order of the edge in case of oneway
+    try:
+        edge = G[n1][n2][0]
+    except:
+        n1,n2 = n2,n1
+        edge = G[n1][n2][0]
+    n1,n2 = getOriginalEdgeDirection(edge["osmid"], [n1,n2])
+    
+    # Note : access node attributes
+    # ex. for x : G.nodes[n1].x
+    # Junctions creation
+    junctions = []
+    for node_id, node in [ [n1,G.nodes[n1]] , [n2,G.nodes[n2]] ]:
+        junctions.append(createJunction(node_id, node))
+
+    # ways creation
+    # hack : if an edge does not have a name, we name it "rue qui n'a pas de nom"
+    if not "name" in edge:
+        edge["name"] = "rue qui n'a pas de nom"
+    way = Way(edge["osmid"], edge["name"], junctions, channels = [])
+
+    # if n2 is a border node, it means the way is drawn as outgoing from the direction.
+    way_out = None
+    if border_nodes:
+        way_out = True if n2 in border_nodes else False
+
+    # does it have directed lanes ?
+    if "lanes:backward" in edge and "lanes:forward" in edge:
+        createDirectedLanes(edge, way, way_out)
+    # does it have lanes ?
+    elif "lanes" in edge:
+        createUndirectedLanes(edge, way, way_out)
+    else :
+        if "oneway" in edge and edge["oneway"] == "no":
+            createLane("Road", way, way_out)
+            createLane("Road", way, not way_out)
+        else:
+            createLane("Road", way, way_out)
+
+    # does it have sidewalks (default : yes)
+    # bug in lanes with sidewalks, to solve later
+    '''
+    if "sidewalk" in edge:
+        if edge["sidewalk"] == "yes":
+            way.channels.insert(0, Sidewalk(None, None))
+            way.channels.append(Sidewalk(None, None))
+    else:
+            way.channels.insert(0, Sidewalk(None, None))
+            way.channels.append(Sidewalk(None, None))
+    '''
+
+    return way
