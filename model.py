@@ -1,73 +1,6 @@
 from utils import *
 
 #
-# Intersection
-#
-
-class Intersection():
-
-    def __init__(self, type, branches):
-        self.type = type
-        self.branches = branches
-
-#
-# Branches
-#
-
-class Branch():
-
-    def __init__(self, id, angle, direction_name, street_name, ways):
-        self.id = id
-        self.number = None
-        self.angle = angle
-        self.direction_name = direction_name
-        self.street_name = street_name
-        self.ways = ways
-
-#
-# Ways
-#
-
-class Way():
-
-    def __init__(self, id, name, junctions, channels):
-        self.id = id
-        self.name = name
-        self.junctions = junctions
-        self.channels = channels
-
-class Channel():
-
-    def __init__(self, id, direction):
-        self.id = id
-        self.direction = direction
-
-class Road(Channel):
-
-    def __init__(self, id, direction):
-        super().__init__(id, direction)
-
-class Bus(Channel):
-
-    def __init__(self, id, direction):
-        super().__init__(id, direction)
-
-class Island(Channel):
-
-    def __init__(self, id, direction):
-        super().__init__(id, direction)
-
-class Sidewalk(Channel):
-
-    def __init__(self, id, direction):
-        super().__init__(id, direction)
-
-class Bicycle(Channel):
-
-    def __init__(self, id, direction):
-        super().__init__(id, direction)
-
-#
 # Junctions
 #
 # Use the decorator design pattern, that enables having one class per concrete object with its own semantic attributes to create a complex junction
@@ -163,6 +96,73 @@ class Yield(JunctionDecorator):
         # Specific attributes
         JunctionDecorator.yd_direction = yd_direction
         JunctionDecorator.yd_way = yd_way
+
+#
+# Ways
+#
+
+class Channel():
+
+    def __init__(self, id, direction):
+        self.id = id
+        self.direction = direction
+
+class Road(Channel):
+
+    def __init__(self, id, direction):
+        super().__init__(id, direction)
+
+class Bus(Channel):
+
+    def __init__(self, id, direction):
+        super().__init__(id, direction)
+
+class Island(Channel):
+
+    def __init__(self, id, direction):
+        super().__init__(id, direction)
+
+class Sidewalk(Channel):
+
+    def __init__(self, id, direction):
+        super().__init__(id, direction)
+
+class Bicycle(Channel):
+
+    def __init__(self, id, direction):
+        super().__init__(id, direction)
+
+class Way():
+
+    def __init__(self, id, name, junctions : Junction, channels : Channel):
+        self.id = id
+        self.name = name
+        self.junctions = junctions
+        self.channels = channels
+
+#
+# Branches
+#
+
+class Branch():
+
+    def __init__(self, id, angle, direction_name, street_name, ways : Way):
+        self.id = id
+        self.number = None
+        self.angle = angle
+        self.direction_name = direction_name
+        self.street_name = street_name
+        self.ways = ways
+
+#
+# Intersection
+#
+
+class Intersection():
+
+    def __init__(self, type, branches : Branch):
+        self.type = type
+        self.branches = branches
 
 #
 # Object creation function
