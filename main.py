@@ -1,10 +1,7 @@
 #!/usr/bin/env python3
 
 import shutil
-import os
 import argparse
-from warnings import catch_warnings
-from networkx.algorithms.distance_measures import center
 from model import *
 from segmentationReader import *
 from utils import *
@@ -29,7 +26,7 @@ args = parser.parse_args()
 folders = ["data", "output"]
 if not args.no_clear_cache:
     folders.append("cache")
-for dir in  folders : shutil.rmtree(dir, ignore_errors=True), os.mkdir(dir) 
+for dir in  folders : shutil.rmtree(dir, ignore_errors=True), shutil.os.mkdir(dir) 
 
 # use coordinates in parameters if presents, else use the coordinates of this intersection : https://www.openstreetmap.org/#map=19/45.77351/3.09015
 if args.by_coordinates:
@@ -61,9 +58,6 @@ G = ox.utils_graph.get_undirected(G)
 seg = cs.Segmentation(G, connection_intensity = connection_intensity, max_cycle_elements = max_cycle_elements)
 seg.process()
 seg.to_json("data/intersection.json", longitude, latitude)
-
-# clear console
-#os.system("clear")
 
 #
 # Model completion
@@ -119,21 +113,6 @@ for branch in seg_crossroad.branches:
 # order branch by angle
 branches.sort(key=lambda b: b.angle)
 
-# give name to branches
-# direction : unused for now
-"""
-print("This crossroad has %s branches. Name them according to their clock order, starting from 12': "%len(branches))
-for branch in branches:
-    print("For the branch named %s at %s':"%(branch.street_name, branch.angle))
-    direction = input()
-    # format direction for the text generation
-    direction = direction.split(" ")
-    branch.direction = [direction.pop(0).lower()," ".join(direction)]
-    #format street name for the text generation
-    street_name = branch.street_name.split(" ")
-    branch.street_name = [street_name.pop(0).lower()," ".join(street_name)]
-"""
-
 # branch number : number branches according to their clockwise order
 for i, branch in enumerate(branches): 
     branch.number = i+1
@@ -173,24 +152,11 @@ general_desc = "Le carrefour à l'intersection %s est un carrefour à %s branche
 branches_desc = []
 for branch in crossroad.branches:
 
-    # direction : unused for now
-    """
-    direction = PP(
-        P("de"), 
-        NP(
-            D("le"), 
-            N(branch.direction[0]), 
-            Q(branch.direction[1]) if len(branch.direction) > 1 else Q("")
-        )
-    )
-    """
-
     # branch number
     number = NO(branch.number).dOpt({"nat": True})
 
     name = " ".join(branch.street_name)
     
-    # channels = branch.ways[0].channels
     channels = []
     for way in branch.ways:
         channels += way.channels

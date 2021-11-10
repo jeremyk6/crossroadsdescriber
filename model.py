@@ -273,16 +273,4 @@ def createWay(edge, G, border_nodes=[]):
         else:
             createLane("Road", way, way_out)
 
-    # does it have sidewalks (default : yes)
-    # bug in lanes with sidewalks, to solve later
-    '''
-    if "sidewalk" in edge:
-        if edge["sidewalk"] == "yes":
-            way.channels.insert(0, Sidewalk(None, None))
-            way.channels.append(Sidewalk(None, None))
-    else:
-            way.channels.insert(0, Sidewalk(None, None))
-            way.channels.append(Sidewalk(None, None))
-    '''
-
     return way
