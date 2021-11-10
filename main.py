@@ -160,9 +160,6 @@ for branch in crossroad.branches:
     channels = []
     for way in branch.ways:
         channels += way.channels
-    for channel in channels:
-        if channel.__class__.__name__ == "Sidewalk":
-            channels.remove(channel)
     n_voies = PP(
         P("de"),
         NP(

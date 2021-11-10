@@ -122,11 +122,6 @@ class Island(Channel):
     def __init__(self, id, direction):
         super().__init__(id, direction)
 
-class Sidewalk(Channel):
-
-    def __init__(self, id, direction):
-        super().__init__(id, direction)
-
 class Bicycle(Channel):
 
     def __init__(self, id, direction):
