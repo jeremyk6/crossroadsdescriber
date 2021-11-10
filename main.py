@@ -88,20 +88,31 @@ branches = []
 for branch in seg_crossroad.branches:
 
     ways = []
+    azimuths = []
 
     border_nodes = []
 
     for edge in branch.edges_by_nodes:
 
         # keep border nodes
+        border_node = None
         if edge[0] in seg_crossroad.border_nodes:
             border_nodes.append(edge[0])
+            border_node = G.nodes[edge[0]]
         if edge[1] in seg_crossroad.border_nodes:
             border_nodes.append(edge[1])
+            border_node = G.nodes[edge[1]]
 
         edge_id = "%s%s"%(edge[0],edge[1])
         crossroad_edges[edge_id] = createWay(edge, G, seg_crossroad.border_nodes)
         ways.append(crossroad_edges[edge_id])
+        azimuths.append(azimuthAngle(crossroad_center["x"], crossroad_center["y"], border_node["x"], border_node["y"]))
+
+    # reorder ways in branch
+    if(max(azimuths) - min(azimuths) >= 180):
+        for i in range(len(azimuths)):
+            if azimuths[i] >= 270 : azimuths[i] -= 360
+    azimuths, ways = (list(t) for t in zip(*sorted(zip(azimuths, ways))))
 
     # compute mean angle by branch
     mean_angle = meanAngle(G, border_nodes, crossroad_center)
@@ -119,7 +130,7 @@ for i, branch in enumerate(branches):
     #format street name for the text generation
     street_name = branch.street_name.split(" ")
     branch.street_name = [street_name.pop(0).lower()," ".join(street_name)]
-    
+
 # create crossroad
 crossroad = Intersection(None, branches)
 
