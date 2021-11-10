@@ -209,7 +209,7 @@ def createDirectedLanes(edge, way, way_out):
     if "psv:lanes:backward" in edge and "psv:lanes:forward" in edge:
         for lane in edge["psv:lanes:backward"].split("|"):
             type = "Road"
-            if lane == "designated": type = "Bus",
+            if lane == "designated": type = "Bus"
             createLane(type, way, not way_out)
         for lane in edge["psv:lanes:forward"].split("|"):
             type = "Road"
