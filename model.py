@@ -127,13 +127,19 @@ class Bicycle(Channel):
     def __init__(self, id, direction):
         super().__init__(id, direction)
 
+class Sidewalk():
+
+    def __init__(self, id):
+        self.id = id
+
 class Way():
 
-    def __init__(self, id, name, junctions : Junction, channels : Channel):
+    def __init__(self, id, name, junctions : Junction, channels : Channel, sidewalks : Sidewalk):
         self.id = id
         self.name = name
         self.junctions = junctions
         self.channels = channels
+        self.sidewalks = sidewalks
 
 #
 # Branches
@@ -248,7 +254,7 @@ def createWay(edge, G, border_nodes=[]):
     # hack : if an edge does not have a name, we name it "rue qui n'a pas de nom"
     if not "name" in edge:
         edge["name"] = "rue qui n'a pas de nom"
-    way = Way(edge["osmid"], edge["name"], junctions, channels = [])
+    way = Way(edge["osmid"], edge["name"], junctions, channels = [], sidewalks=[None, None])
 
     # if n2 is a border node, it means the way is drawn as outgoing from the direction.
     way_out = None

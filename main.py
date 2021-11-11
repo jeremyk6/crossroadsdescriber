@@ -131,7 +131,62 @@ for i, branch in enumerate(branches):
     street_name = branch.street_name.split(" ")
     branch.street_name = [street_name.pop(0).lower()," ".join(street_name)]
 
-# create crossroad
+#
+# Sidewalk generation
+#
+
+sidewalk_nodes = []
+for i, branch in enumerate(branches):
+    
+    # Keep border nodes of the branch
+    border_nodes = []
+    for j, way in enumerate(branch.ways):
+        for junction in way.junctions:
+            if junction.id not in crossroad_border_nodes.keys():
+                border_nodes.append(junction)
+
+    # Filter to keep the most left and most right nodes (branch sidewalk nodes)
+    branch_sidewalk_nodes = []
+    branch_sidewalk_nodes.append(border_nodes[0])
+    if(len(border_nodes) > 1):
+        branch_sidewalk_nodes.append(border_nodes[-1])
+    sidewalk_nodes.append(branch_sidewalk_nodes)
+
+
+sidewalk_id = 0
+for i, branch_sidewalk_nodes in enumerate(sidewalk_nodes):
+    # create sidewalk path
+    next_i = i+1 if i < len(sidewalk_nodes)-1 else 0
+    sidewalk_n1 = branch_sidewalk_nodes[1] if len(branch_sidewalk_nodes) > 1 else branch_sidewalk_nodes[0]
+    sidewalk_n2 = sidewalk_nodes[next_i][0]
+    sidewalk_path = ox.distance.shortest_path(G, sidewalk_n1.id, sidewalk_n2.id)
+    if(sidewalk_path):
+        # if a sidewalk path exists, we create the sidewalk then link it to each way of the path
+        sidewalk = Sidewalk(sidewalk_id)
+        sidewalk_id += 1
+        for j, node in enumerate(sidewalk_path):
+            if j < len(sidewalk_path)-1:
+                n1 = sidewalk_path[j]
+                n2 = sidewalk_path[j+1]
+                way = None
+                ids = ["%s%s"%(n1,n2), "%s%s"%(n2,n1)]
+                for id in ids:
+                    if id in crossroad_edges:
+                        way = crossroad_edges[id]
+                # if the way does not exist we create it (may not happen but sometimes it is)
+                if not way:
+                    way = createWay([n1,n2], G)
+                    crossroad_edges[id] = way
+                # if the sidewalk goes in the same direction as the way, it's the left sidewalk. Otherwise it's the right one.
+                if way.junctions[0].id == n1:
+                    way.sidewalks[0] = sidewalk
+                else:
+                    way.sidewalks[1] = sidewalk
+
+#
+# Crossroad creation
+#
+
 crossroad = Intersection(None, branches)
 
 #
