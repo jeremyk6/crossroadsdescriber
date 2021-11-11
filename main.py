@@ -96,10 +96,10 @@ for branch in seg_crossroad.branches:
 
         # keep border nodes
         border_node = None
-        if edge[0] in seg_crossroad.border_nodes:
+        if edge[0] in branch.border_nodes:
             border_nodes.append(edge[0])
             border_node = G.nodes[edge[0]]
-        if edge[1] in seg_crossroad.border_nodes:
+        if edge[1] in branch.border_nodes:
             border_nodes.append(edge[1])
             border_node = G.nodes[edge[1]]
 
