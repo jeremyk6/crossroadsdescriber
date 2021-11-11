@@ -10,6 +10,7 @@ from lib.jsRealBclass import N,A,Pro,D,Adv,V,C,P,DT,NO,Q,  NP,AP,AdvP,VP,CP,PP,S
 import lib.crseg.segmentation as cs
 import osmnx as ox
 from config import *
+from geojson import LineString, Feature, FeatureCollection, dump
 
 #
 # Configuration
@@ -20,6 +21,7 @@ parser = argparse.ArgumentParser(description="Build a basic description of the c
 parser.add_argument('-c', '--by-coordinates', nargs=2, help='Load input from OSM using the given latitude', type=float)
 parser.add_argument('-nc', '--no-clear-cache', help='Do not clear cached datas', action='store_true')
 parser.add_argument('-o', '--output', nargs=1, help='Output a JSON file.', type=str)
+parser.add_argument('-geojson', '--output-geojson', nargs=1, help='Output a JSON file.', type=str)
 args = parser.parse_args()
 
 # create / clean basic folder structure
@@ -411,6 +413,21 @@ output.close()
 # json output
 if args.output:
     outputJSON("output/"+args.output[0], {**crossroad_inner_nodes, **crossroad_border_nodes}, branches, general_desc, branches_desc, crossings_desc)
+
+# geojson output
+if args.output_geojson:
+    features = []
+    for way in crossroad_edges.values():
+        n1 = way.junctions[0]
+        n2 = way.junctions[1]
+        features.append(Feature(geometry=LineString([(n1.x, n1.y), (n2.x, n2.y)]), properties={
+            "id" : way.id,
+            "name" : way.name,
+            "left_sidewalk" : way.sidewalks[0].id if way.sidewalks[0] else "",
+            "right_sidewalk" : way.sidewalks[1].id if way.sidewalks[1] else ""
+        }))
+    with open("output/"+args.output_geojson[0], "w") as f:
+        dump(FeatureCollection(features), f)
 
 # display crossroad and save image
 cr = seg.get_crossroad(longitude, latitude)
