@@ -133,8 +133,15 @@ for i, branch in enumerate(branches):
     street_name = branch.street_name.split(" ")
     branch.street_name = [street_name.pop(0).lower()," ".join(street_name)]
 
+# graph cleaning to remove edges that are not part of the crossroads
+to_remove = []
+for (n1, n2, edge) in G.edges(data=True):
+    if "%s%s"%(n1,n2) not in crossroad_edges.keys() and "%s%s"%(n2,n1) not in crossroad_edges.keys():
+        to_remove.append([n1,n2])
+G.remove_edges_from(to_remove)
+
 #
-# Sidewalk generation
+# Sidewalks and islands generation
 #
 
 sidewalk_nodes = []
@@ -154,6 +161,8 @@ for i, branch in enumerate(branches):
         branch_sidewalk_nodes.append(border_nodes[-1])
     sidewalk_nodes.append(branch_sidewalk_nodes)
 
+# Get islands in the crossroads - still unfinished
+islands = getIslands(G, branches, crossroad_border_nodes)
 
 sidewalk_id = 0
 for i, branch_sidewalk_nodes in enumerate(sidewalk_nodes):

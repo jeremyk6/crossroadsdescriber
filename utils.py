@@ -2,6 +2,7 @@ import glob
 import json
 import math
 import itertools
+import networkx as nx
 
 # Read OSMnx cache and return start node and end node of a way if it exists
 def getOriginalEdgeDirection(way_id, edge):
@@ -114,6 +115,21 @@ def outputJSON(filename, junctions, branches, general_desc, branches_desc, cross
     with open(filename, 'w') as outfile:
         json.dump(data, outfile, ensure_ascii=False)
 
+# Detect islands by closing branches with multiple ways, then by detecting faces
+def getIslands(G, branches, crossroad_border_nodes):
+    tG = nx.Graph(G)
+
+    for i, branch in enumerate(branches): 
+        border_nodes = []
+        for j, way in enumerate(branch.ways):
+            for junction in way.junctions:
+                if junction.id not in crossroad_border_nodes.keys():
+                    border_nodes.append(junction)    
+        # Create faces for islands not closed in the graph (border islands)
+        for j in range(len(border_nodes)-1):
+            tG.add_edge(border_nodes[j].id, border_nodes[j+1].id)
+
+    return [face for face in nx.cycle_basis(tG)]
 
 # Translate words
 def tr(word):
