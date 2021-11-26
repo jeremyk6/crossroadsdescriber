@@ -10,8 +10,9 @@ import networkx as nx
 def getOriginalEdgeDirection(way_id, edge):
     paths = glob.glob("cache/*.json")
     timestamps = [datetime.fromtimestamp(path.getctime(json_file)) for json_file in paths]
-    json_file = paths[min(range(len(timestamps)), key=timestamps.__getitem__)]
-    data = json.load(open(json_file))
+    json_file = open(paths[min(range(len(timestamps)), key=timestamps.__getitem__)])
+    data = json.load(json_file)
+    json_file.close()
     for el in data["elements"]:
         if el["type"] == "way" and el["id"] == way_id:
             for node in el["nodes"]:
