@@ -1,13 +1,17 @@
 import glob
 import json
 import math
+from os import path
+from datetime import datetime
 import itertools
 import networkx as nx
 
 # Read OSMnx cache and return start node and end node of a way if it exists
 def getOriginalEdgeDirection(way_id, edge):
-    path = glob.glob("cache/*.json")[0]
-    data = json.load(open(path))
+    paths = glob.glob("cache/*.json")
+    timestamps = [datetime.fromtimestamp(path.getctime(json_file)) for json_file in paths]
+    json_file = paths[min(range(len(timestamps)), key=timestamps.__getitem__)]
+    data = json.load(open(json_file))
     for el in data["elements"]:
         if el["type"] == "way" and el["id"] == way_id:
             for node in el["nodes"]:
