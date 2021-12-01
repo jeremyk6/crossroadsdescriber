@@ -4,6 +4,7 @@ import math
 from os import path
 from datetime import datetime
 import itertools
+import osmnx as ox
 import networkx as nx
 
 # Read OSMnx cache and return start node and end node of a way if it exists
@@ -135,6 +136,38 @@ def getIslands(G, branches, crossroad_border_nodes):
             tG.add_edge(border_nodes[j].id, border_nodes[j+1].id)
 
     return [face for face in nx.cycle_basis(tG)]
+
+# Detect sidewalks by computing shortest path 
+def getSidewalks(G, branches, crossroad_border_nodes):
+    sidewalk_nodes = []
+    for i, branch in enumerate(branches):
+        
+        # Keep border nodes of the branch
+        border_nodes = []
+        for j, way in enumerate(branch.ways):
+            for junction in way.junctions:
+                if junction.id not in crossroad_border_nodes.keys():
+                    border_nodes.append(junction)
+
+        # Filter to keep the most left and most right nodes (branch sidewalk nodes)
+        branch_sidewalk_nodes = []
+        branch_sidewalk_nodes.append(border_nodes[0])
+        if(len(border_nodes) > 1):
+            branch_sidewalk_nodes.append(border_nodes[-1])
+        sidewalk_nodes.append(branch_sidewalk_nodes)
+
+    sidewalk_paths = []
+    for i, branch_sidewalk_nodes in enumerate(sidewalk_nodes):
+        # create sidewalk path
+        next_i = i+1 if i < len(sidewalk_nodes)-1 else 0
+        sidewalk_n1 = branch_sidewalk_nodes[1] if len(branch_sidewalk_nodes) > 1 else branch_sidewalk_nodes[0]
+        sidewalk_n2 = sidewalk_nodes[next_i][0]
+        sidewalk_path = ox.distance.shortest_path(G, sidewalk_n1.id, sidewalk_n2.id)
+        if(sidewalk_path):
+            sidewalk_paths.append(sidewalk_path)
+        
+    return sidewalk_paths
+
 
 # Translate words
 def tr(word):
