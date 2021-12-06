@@ -1,5 +1,6 @@
 import glob
 import json
+from xml.dom import minidom
 import math
 from os import path
 from datetime import datetime
@@ -9,7 +10,20 @@ import networkx as nx
 import time
 
 # Read OSMnx cache and return start node and end node of a way if it exists
-def getOriginalEdgeDirection(way_id, edge):
+def getOriginalEdgeDirection(way_id, edge, xmlfile=None):
+    if xmlfile:
+        doc = minidom.parse(xmlfile)
+        ways = doc.getElementsByTagName("way")
+        for way in ways:
+            if way.getAttribute("id") == str(way_id):
+                nodes = way.getElementsByTagName("nd")
+                for node in nodes:
+                    node_id = node.getAttribute("ref")
+                    if node_id == str(edge[0]):
+                        return edge
+                    if node_id == str(edge[1]):
+                        return [edge[1], edge[0]]
+        return -1
     paths = glob.glob("cache/*.json")
     timestamps = [datetime.fromtimestamp(path.getctime(json_file)) for json_file in paths]
     json_file = open(paths[min(range(len(timestamps)), key=timestamps.__getitem__)])

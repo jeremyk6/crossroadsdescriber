@@ -19,6 +19,7 @@ from geojson import LineString, Feature, FeatureCollection, dump
 # configure arg parser
 parser = argparse.ArgumentParser(description="Build a basic description of the crossroad located at the requested coordinate.")
 parser.add_argument('-c', '--by-coordinates', nargs=2, help='Load input from OSM using the given latitude', type=float)
+parser.add_argument('-f', '--file', nargs=1, help='Load .osm file instead of using Overpass', type=str)
 parser.add_argument('-nc', '--no-clear-cache', help='Do not clear cached datas', action='store_true')
 parser.add_argument('-o', '--output', nargs=1, help='Output a JSON file.', type=str)
 parser.add_argument('-geojson', '--output-geojson', nargs=1, help='Output a JSON file.', type=str)
@@ -45,7 +46,16 @@ else:
 # OSMnx configuration
 ox.config(use_cache=True, useful_tags_way = list(set(ox.settings.useful_tags_way + way_tags_to_keep)), useful_tags_node = list(set(ox.settings.useful_tags_node + node_tags_to_keep)))
 
-G = ox.graph_from_point((latitude, longitude), dist=150, network_type="all", retain_all=False, truncate_by_edge=True, simplify=False)
+xmlfile = None
+if args.file :
+    if args.by_coordinates:
+        xmlfile = args.file[0]
+        G = ox.graph_from_xml(args.file[0], simplify=False)
+    else :
+        print("You need to give the coordinate of the main crossroad to proceed.")
+        exit
+else :
+    G = ox.graph_from_point((latitude, longitude), dist=150, network_type="all", retain_all=False, truncate_by_edge=True, simplify=False)
 
 # graph segmentation (from https://gitlab.limos.fr/jmafavre/crossroads-segmentation/-/blob/master/src/get-crossroad-description.py)
 
@@ -82,7 +92,7 @@ for node_id in seg_crossroad.border_nodes:
 crossroad_edges = {}
 for edge in seg_crossroad.edges_by_nodes:
     edge_id = "%s%s"%(edge[0],edge[1])
-    crossroad_edges[edge_id] = createWay(edge, G)
+    crossroad_edges[edge_id] = createWay(edge, G, xmlfile=xmlfile)
 
 # branch creation
 id = 1
@@ -106,7 +116,7 @@ for branch in seg_crossroad.branches:
             border_node = G.nodes[edge[1]]
 
         edge_id = "%s%s"%(edge[0],edge[1])
-        crossroad_edges[edge_id] = createWay(edge, G, seg_crossroad.border_nodes)
+        crossroad_edges[edge_id] = createWay(edge, G, seg_crossroad.border_nodes, xmlfile=xmlfile)
         ways.append(crossroad_edges[edge_id])
         azimuths.append(azimuthAngle(crossroad_center["x"], crossroad_center["y"], border_node["x"], border_node["y"]))
 
@@ -158,7 +168,7 @@ for sidewalk_id, sidewalk_path in enumerate(getSidewalks(G, branches, crossroad_
                     way = crossroad_edges[id]
             # if the way does not exist we create it (may not happen but sometimes it is)
             if not way:
-                way = createWay([n1,n2], G)
+                way = createWay([n1,n2], G, xmlfile=xmlfile)
                 crossroad_edges[id] = way
             # if the sidewalk goes in the same direction as the way, it's the left sidewalk. Otherwise it's the right one.
             if way.junctions[0].id == n1:
