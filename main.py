@@ -176,8 +176,28 @@ for sidewalk_id, sidewalk_path in enumerate(getSidewalks(G, branches, crossroad_
             else:
                 way.sidewalks[1] = sidewalk
 
-# Get islands in the crossroads - still unfinished
+# Get islands in the crossroads
 islands = getIslands(G, branches, crossroad_border_nodes)
+for island_id, island_path in enumerate(islands):
+    if not isPolygonClockwiseOrdered(island_path, G):
+        island_path = list(reversed(island_path))
+    # island is not closed by NetworkX, we close it
+    island_path.append(island_path[0])
+    island = Island(island_id)
+    for j, node in enumerate(island_path):
+        if j < len(island_path)-1:
+            n1 = island_path[j]
+            n2 = island_path[j+1]
+            way = None
+            ids = ["%s%s"%(n1,n2), "%s%s"%(n2,n1)]
+            for id in ids:
+                if id in crossroad_edges:
+                    way = crossroad_edges[id]
+            if way:
+                if way.junctions[0].id == n1:
+                    way.islands[1] = island
+                else:
+                    way.islands[0] = island
 
 #
 # Crossroad creation
@@ -418,7 +438,9 @@ if args.output_geojson:
             "id" : way.id,
             "name" : way.name,
             "left_sidewalk" : way.sidewalks[0].id if way.sidewalks[0] else "",
-            "right_sidewalk" : way.sidewalks[1].id if way.sidewalks[1] else ""
+            "right_sidewalk" : way.sidewalks[1].id if way.sidewalks[1] else "",
+            "left_island" : way.islands[0].id if way.islands[0] else "",
+            "right_island" : way.islands[1].id if way.islands[1] else ""
         }))
     with open("output/"+args.output_geojson[0], "w") as f:
         dump(FeatureCollection(features), f)

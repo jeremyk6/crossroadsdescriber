@@ -195,6 +195,23 @@ def getSidewalks(G, branches, crossroad_border_nodes):
         
     return sidewalk_paths
 
+def isPolygonClockwiseOrdered(polygon, G):
+    polygon = list(polygon)
+    for i in range(len(polygon)):
+        id = polygon[i]
+        polygon[i] = {"x":G.nodes[id]["x"],"y":G.nodes[id]["y"]}
+    # we close the polygon if it's not closed
+    if polygon[0] != polygon[-1]:
+        polygon.append(polygon[0])
+    sum = 0
+    for i in range(len(polygon)-1):
+        x1 = polygon[i]["x"]
+        x2 = polygon[i+1]["x"]
+        y1 = polygon[i]["y"]
+        y2 = polygon[i+1]["y"]
+        sum += (x2 - x1)*(y2 + y1)
+    return sum >= 0
+    
 
 # Translate words
 def tr(word):

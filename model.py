@@ -132,14 +132,20 @@ class Sidewalk():
     def __init__(self, id):
         self.id = id
 
+class Island():
+    
+    def __init__(self, id):
+        self.id = id
+
 class Way():
 
-    def __init__(self, id, name, junctions : Junction, channels : Channel, sidewalks : Sidewalk):
+    def __init__(self, id, name, junctions : Junction, channels : Channel, sidewalks : Sidewalk, islands : Island):
         self.id = id
         self.name = name
         self.junctions = junctions
         self.channels = channels
         self.sidewalks = sidewalks
+        self.islands = islands
 
 #
 # Branches
@@ -254,7 +260,7 @@ def createWay(edge, G, border_nodes=[], xmlfile=None):
     # hack : if an edge does not have a name, we name it "rue qui n'a pas de nom"
     if not "name" in edge:
         edge["name"] = "rue qui n'a pas de nom"
-    way = Way(edge["osmid"], edge["name"], junctions, channels = [], sidewalks=[None, None])
+    way = Way(edge["osmid"], edge["name"], junctions, channels = [], sidewalks=[None, None], islands=[None, None])
 
     # if n2 is a border node, it means the way is drawn as outgoing from the direction.
     way_out = None
