@@ -150,7 +150,20 @@ def getIslands(G, branches, crossroad_border_nodes):
         for j in range(len(border_nodes)-1):
             tG.add_edge(border_nodes[j].id, border_nodes[j+1].id)
 
-    return [face for face in nx.cycle_basis(tG)]
+
+    faces = []
+    for cycle in nx.minimum_cycle_basis(tG):
+        ordered = []
+        to_handle = cycle[0]
+        while len(cycle) > 0:
+            ordered.append(to_handle)
+            cycle.remove(to_handle)
+            neighbors = list(set(tG.neighbors(to_handle)).intersection(cycle))
+            if len(neighbors) > 0:
+                to_handle = neighbors[0]
+        faces.append(ordered)
+
+    return faces
 
 # Detect sidewalks by computing shortest path 
 def getSidewalks(G, branches, crossroad_border_nodes):
