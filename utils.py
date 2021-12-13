@@ -100,7 +100,10 @@ def outputJSON(filename, junctions, branches, general_desc, branches_desc, cross
             nodes.append([junction.id for junction in way.junctions])
         data["branches"].append({
             "nodes" : nodes,
-            "text" : branch_desc + " " + " ".join(crossing_desc)
+            "text" : branch_desc + " " + " ".join(crossing_desc),
+            "tags" : {
+                "auto" : "yes"
+            }
         })
     
     crosswalks = []
@@ -130,7 +133,10 @@ def outputJSON(filename, junctions, branches, general_desc, branches_desc, cross
 
         data["crossings"].append({
             "node" : crosswalk.id,
-            "text" : crosswalk_desc
+            "text" : crosswalk_desc,
+            "tags" : {
+                "auto" : "yes"
+            }
         })
 
     with open(filename, 'w') as outfile:
