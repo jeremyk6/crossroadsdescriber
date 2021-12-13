@@ -1,5 +1,7 @@
 
 import osmnx as ox
+import itertools
+
 
 from . import reliability as rl
 from . import region as r
@@ -41,7 +43,10 @@ class Crossroad(r.Region):
             self.build_lanes_description()
 
     def __str__(self):
-        return "* id: %s\n* center: %s\n* lanes: %s\n* branches: %s" % (self.id, self.center, len(self.lanes), len(self.branches))
+        if hasattr(self, "branches"):
+            return "* id: %s\n* center: %s\n* lanes: %s\n* branches: %s" % (self.id, self.center, len(self.lanes), len(self.branches))
+        else:
+            return "* id: %s\n* center: %s\n* lanes: %s\n" % (self.id, self.center, len(self.lanes))
 
     def __repr__(self):
         return "id: %s, center: %s, #nodes: %s" % (self.id, self.center, len(self.nodes))
@@ -58,7 +63,7 @@ class Crossroad(r.Region):
         text += str(self.to_json_data())
         return text
 
-    def to_json_array(tp, innerNodes, borderNodes, edges):
+    def to_json_array(tp, innerNodes, borderNodes, edges, G):
         crdata = {}
         crdata["type"] = tp
         crdata["nodes"] = {}
@@ -67,6 +72,7 @@ class Crossroad(r.Region):
         crdata["edges_by_nodes"] = []
         for e in edges:
             crdata["edges_by_nodes"].append(e)
+        crdata["coordinates"] = {n: {"x": G.nodes[n]["x"], "y": G.nodes[n]["y"]} for n in innerNodes + borderNodes}
         return crdata
 
     def to_json_data(self):
@@ -80,7 +86,7 @@ class Crossroad(r.Region):
             else:
                 innerNodes.append(n)            
 
-        data.append(Crossroad.to_json_array("crossroad", innerNodes, borderNodes, self.edges))
+        data.append(Crossroad.to_json_array("crossroad", innerNodes, borderNodes, self.edges, self.G))
 
         # for each branch
         for branch in self.branches:
@@ -89,7 +95,7 @@ class Crossroad(r.Region):
                 nodes.add(lane.edge[0])
                 nodes.add(lane.edge[1])
             edges = [lane.edge for lane in branch]
-            data.append(Crossroad.to_json_array("branch", [], list(nodes), edges))
+            data.append(Crossroad.to_json_array("branch", [], list(nodes), edges, self.G))
 
 
         return data
@@ -97,8 +103,35 @@ class Crossroad(r.Region):
 
     def get_lane_description_from_edge(self, edge):
         e = self.G[edge[0]][edge[1]][0]
-        angle = u.Util.bearing(self.G, self.get_center(), edge[1])
+        angle = u.Util.bearing(self.G, self.get_center(), edge[0 if self.get_center() == edge[1] else 1])
         name = e["name"] if "name" in e else None
+        if name == None:
+            # build the path starting from this edge
+            path = u.Util.get_path_to_biffurcation(self.G, edge[0], edge[1])
+
+            # if one of the edges has a name, it's the name of the lane
+            for p1, p2 in zip(path, path[1:]):
+                 e = self.G[p1][p2][0]
+                 if "name" in e:
+                     name = e["name"]
+                     break
+
+            if name == None:
+                # if not found,
+                # consider the last node of this path
+                end = path[-1]
+                # and check if it exists other paths between this end and the crossroad
+                other_paths = []
+                for nb in self.G.neighbors(end):
+                    op = u.Util.get_path_to_biffurcation(self.G, end, nb)
+                    if self.has_node(op[-1]):
+                        # TODO: check if they are parallel
+                        other_paths.append(op)
+                # if only one path exists
+                if len(other_paths) == 1:
+                    o_e = self.G[other_paths[0][0]][other_paths[0][1]][0]
+                    # if yes, the current edge has probably the same name
+                    name = o_e["name"] if "name" in o_e else None
         return ld.LaneDescription(angle, name, edge)
 
     def get_lanes_description_from_node(self, border):
@@ -145,7 +178,7 @@ class Crossroad(r.Region):
                 # and add the corresponding lanes
                 open_lanes = self.get_open_paths(center, radius)
                 for ol in open_lanes:
-                    self.lanes.append(self.get_lane_description_from_edge((ol[len(ol) - 2], ol[len(ol) - 1])))
+                    self.lanes.append(self.get_lane_description_from_edge((ol[1], ol[0])))
         
 
     def build_crossroads(G):
@@ -370,12 +403,8 @@ class Crossroad(r.Region):
         # orthogonal to the junction
         for b1 in self.lanes:
             for b2 in crossroad.lanes:
-                if b1.is_similar(b2) and b1.is_orthogonal(angle):
+                if b1.is_similar(b2) and (b1.is_orthogonal(angle) or b2.is_orthogonal(angle)):
                     return True
-
-        # if their distance is less than their combinded radius
-        if u.Util.distance(self.G, self.get_center(), crossroad.get_center()) < self.get_radius() + crossroad.get_radius():
-            return True
 
         return False
 
@@ -493,6 +522,7 @@ class Crossroad(r.Region):
         # for each lane
         for lane in self.lanes:
             mbranches = []
+
             # check if it's similar to a lane already in a built branch
             for i, branch in enumerate(self.branches):
                 nb = len([l for l in branch if l.is_similar(lane)])

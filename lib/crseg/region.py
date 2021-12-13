@@ -110,6 +110,9 @@ class Region:
         nbEdgesInside = len([e for e in self.edges if e[0] == n or e[1] == n])
         return nbnb != nbEdgesInside
 
+    def centroid(self):
+        return u.Util.centroid(self.G, self.nodes)
+
     def boundary_nodes(self):
         result = []
         for n in self.nodes:
@@ -129,14 +132,14 @@ class Region:
 
     # return a shortest path inside the current region that connects a node from nodes1 and a node from nodes2
     # if no such path exists, it returns an empty path
-    def get_path(self, nodes1, nodes2):
+    def get_path(self, nodes1, nodes2, weight_function = None):
         if len(nodes1) == 0 or len(nodes2) == 0:
             return []
 
         cutoff = 3 * self.diameter() # large number in case of non straight paths
         # get all possible paths in the current region from the input nodes
         distances, paths = nx.multi_source_dijkstra(self.G, nodes1, 
-            weight = lambda n1, n2, d: u.Util.distance(self.G, n1, n2) if self.has_edge((n1, n2)) else None, 
+            weight = lambda n1, n2, d: (weight_function(self.G, n1, n2) if weight_function != None else u.Util.distance(self.G, n1, n2)) if self.has_edge((n1, n2)) else None, 
             cutoff = cutoff)
 
         # keep paths that reach one of the given nodes

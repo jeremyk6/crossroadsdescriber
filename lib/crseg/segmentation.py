@@ -58,9 +58,8 @@ class Segmentation:
         for c in crossroads:
             self.regions[c.id] = c
 
-
-        # group subparts of crossroads together if they are part of the same crossing
-        scale = 4
+        # group subparts of crossroads together if they are part of the same crossing (using street names)
+        scale = 3 # magic number to process only a small neigborhood
         clusters = cr.Crossroad.get_clusters(crossroads, scale)
 
         # for each cluster
@@ -100,30 +99,8 @@ class Segmentation:
 
         cconnections = cc.CrossroadConnections(self.regions, self.connection_intensity)
 
-        # merge bi-connected crossings
-        for pairs in cconnections.get_pairs():
-            id1 = pairs[0] if pairs[0] in self.regions else newIDs[pairs[0]]
-            id2 = pairs[1] if pairs[1] in self.regions else newIDs[pairs[1]]
-            if id1 != id2:
-                # add the two regions to the inner regions (of a bigger one)
-                self.add_inner_region(self.regions[id1])
-                self.add_inner_region(self.regions[id2])
-                # add paths that are connecting these two regions
-                self.regions[id1].add_paths([x[0] for x in pairs[2]])
-                # merge the two regions
-                self.regions[id1].merge([self.regions[id2]])
-                # remove the old one
-                del self.regions[id2]
-                # update IDs
-                newIDs[id2] = id1
-                for nid in newIDs:
-                    if newIDs[nid] == id2:
-                        newIDs[nid] = id1
-
-        cycles = cconnections.get_cycles(self.max_cycle_elements)
-
         # merge multi crossings (triangles, rings, etc)
-        for cycle in cycles:
+        for cycle in cconnections.get_cycles(self.max_cycle_elements):
             cWithIDs = [cr if cr[0] in self.regions else (newIDs[cr[0]], cr[1]) for cr in cycle][:-1]
             ids = [x[0] for x in cWithIDs]
             
@@ -145,6 +122,26 @@ class Segmentation:
                         for nid in newIDs:
                             if newIDs[nid] == id2:
                                 newIDs[nid] = firstID
+
+        # merge bi-connected crossings
+        for pairs in cconnections.get_pairs():
+            id1 = pairs[0] if pairs[0] in self.regions else newIDs[pairs[0]]
+            id2 = pairs[1] if pairs[1] in self.regions else newIDs[pairs[1]]
+            if id1 != id2:
+                # add the two regions to the inner regions (of a bigger one)
+                self.add_inner_region(self.regions[id1])
+                self.add_inner_region(self.regions[id2])
+                # add paths that are connecting these two regions
+                self.regions[id1].add_paths([x[0] for x in pairs[2]])
+                # merge the two regions
+                self.regions[id1].merge([self.regions[id2]])
+                # remove the old one
+                del self.regions[id2]
+                # update IDs
+                newIDs[id2] = id1
+                for nid in newIDs:
+                    if newIDs[nid] == id2:
+                        newIDs[nid] = id1
 
 
     def add_inner_region(self, region):
@@ -200,13 +197,13 @@ class Segmentation:
                     G.nodes[u]["highway"] = "crossing"
                 if not "highway" in G.nodes[v]:
                     G.nodes[v]["highway"] = "crossing"
-            if ("highway" in a and a["highway"] in ["cycleway", "path"]):
+            if ("highway" in a and a["highway"] in ["cycleway", "path", "pedestrian", "steps"]):
                 to_remove.append((u, v))
             #elif "service" in a and a["service"] in ["parking_aisle"]:
             #    to_remove.append((u, v))                
         G.remove_edges_from(to_remove)
         G = ox.utils_graph.remove_isolated_nodes(G)
-        if not keep_all_components:
+        if not keep_all_components and len(G.nodes) != 0:
             G = ox.utils_graph.get_largest_component(G)
         return G
 
