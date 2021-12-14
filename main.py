@@ -129,7 +129,10 @@ for branch in seg_crossroad.branches:
     # compute mean angle by branch
     mean_angle = meanAngle(G, border_nodes, crossroad_center)
 
-    branches.append(Branch(id, mean_angle, None, ways[0].name, ways))
+    # fetch name of the way in the middle of the branch
+    name = ways[int(len(ways)/2)].name
+
+    branches.append(Branch(id, mean_angle, None, name, ways))
 
     id += 1
 
