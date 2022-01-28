@@ -1,6 +1,25 @@
 from utils import *
 
 #
+# Pedestrian nodes
+#
+
+class PedestrianNode():
+
+    def __init__(self, id):
+        self.id = id
+
+class Sidewalk(PedestrianNode):
+
+    def __init__(self, id):
+        PedestrianNode.__init__(self, id)
+
+class Island(PedestrianNode):
+
+    def __init__(self, id):
+        PedestrianNode.__init__(self, id)
+
+#
 # Junctions
 #
 # Use the decorator design pattern, that enables having one class per concrete object with its own semantic attributes to create a complex junction
@@ -24,29 +43,14 @@ class JunctionDecorator(AbstractJunction):
 
     _junction : AbstractJunction = None
 
-    def __init__(self, junction : AbstractJunction):
+    def __init__(self, junction : AbstractJunction, attrs = {}):
         self._junction = junction
         self._junction.type.append(type(self).__name__)
+        for key in attrs:
+            setattr(self._junction, key, attrs[key])
 
-    @property
-    def junction(self) -> str:
-        return self._junction
-
-    @property
-    def id(self) -> str:
-        return self._junction.id
-
-    @property
-    def x(self) -> str:
-        return self._junction.x
-    
-    @property
-    def y(self) -> str:
-        return self._junction.y
-
-    @property
-    def type(self) -> str:
-        return self._junction.type
+    def __getattr__(self, name):
+       return getattr(self._junction, name)
 
 # Concrete decorators
 
@@ -54,48 +58,31 @@ class JunctionDecorator(AbstractJunction):
 class Bikebox(JunctionDecorator):
 
     def __init__(self, decorated_junction, bb_distance_from_tl):
-        JunctionDecorator.__init__(self, decorated_junction)
-
-        # Specific attributes
-        JunctionDecorator.bb_distance_from_tl = bb_distance_from_tl
+        super().__init__(decorated_junction, {'bb_distance_from_tl' : bb_distance_from_tl})
 
 # Crosswalk decorator
 class Crosswalk(JunctionDecorator):
 
     def __init__(self, decorated_junction, cw_tactile_paving):
-        JunctionDecorator.__init__(self, decorated_junction)
-
-        # Specific attributes
-        JunctionDecorator.cw_tactile_paving = cw_tactile_paving
+        super().__init__(decorated_junction, {'cw_tactile_paving' : cw_tactile_paving, 'pedestrian_nodes' : []})
 
 # Pedestrian traffic light decorator
 class Pedestrian_traffic_light(JunctionDecorator):
 
     def __init__(self, decorated_junction, ptl_sound):
-        JunctionDecorator.__init__(self, decorated_junction)
-
-        # Specific attributes
-        JunctionDecorator.ptl_sound = ptl_sound
+        super().__init__(decorated_junction, {'ptl_sound' : ptl_sound})
 
 # Traffic light decorator
 class Traffic_light(JunctionDecorator):
 
     def __init__(self, decorated_junction, tl_phase, tl_direction):
-        JunctionDecorator.__init__(self, decorated_junction)
-
-        # Specific attributes
-        JunctionDecorator.tl_phase = tl_phase
-        JunctionDecorator.tl_direction = tl_direction
+        super().__init__(decorated_junction, {'tl_phase' : tl_phase, 'tl_direction' : tl_direction})
 
 # Yield decorator
 class Yield(JunctionDecorator):
 
     def __init__(self, decorated_junction, yd_direction, yd_way):
-        JunctionDecorator.__init__(self, decorated_junction)
-
-        # Specific attributes
-        JunctionDecorator.yd_direction = yd_direction
-        JunctionDecorator.yd_way = yd_way
+        super().__init__(decorated_junction, {'yd_direction' : yd_direction, 'yd_way' : yd_way})
 
 #
 # Ways
@@ -121,16 +108,6 @@ class Bicycle(Channel):
 
     def __init__(self, id, direction):
         super().__init__(id, direction)
-
-class Sidewalk():
-
-    def __init__(self, id):
-        self.id = id
-
-class Island():
-    
-    def __init__(self, id):
-        self.id = id
 
 class Way():
 
