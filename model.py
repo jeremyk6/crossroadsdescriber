@@ -29,6 +29,7 @@ class AbstractJunction():
     pass
 
 # Concrete junction
+_junctions = {}
 class Junction(AbstractJunction):
 
     def __init__(self, id, x, y):
@@ -37,6 +38,11 @@ class Junction(AbstractJunction):
         self.x = x
         self.y = y
         self.type = []
+
+    def getJunctions(type = None):
+        if type :
+            return list(filter(lambda junction: type in junction.type , Junction.getJunctions().values()))
+        return _junctions
 
 # Junction decorator
 class JunctionDecorator(AbstractJunction):
@@ -83,6 +89,16 @@ class Yield(JunctionDecorator):
 
     def __init__(self, decorated_junction, yd_direction, yd_way):
         super().__init__(decorated_junction, {'yd_direction' : yd_direction, 'yd_way' : yd_way})
+
+#
+# Crossings
+#
+
+class Crossing:
+
+    def __init__(self, id, crosswalks = []):
+        self.id = id
+        self.crosswalks = crosswalks
 
 #
 # Ways
@@ -170,15 +186,21 @@ def createTrafficSignal(junction, node):
     return junction
 
 def createJunction(node_id, node):
-    junction = Junction(node_id, node["x"], node["y"])
-        
-    # is it a crosswalk ?
-    if "crossing" in node and node["crossing"] != "no":
-        junction = createCrosswalk(junction, node)
+    junction = None
+    if node_id in _junctions.keys():
+        junction = _junctions[node_id]
+    else :
+        junction = Junction(node_id, node["x"], node["y"])
+            
+        # is it a crosswalk ?
+        if "crossing" in node and node["crossing"] != "no":
+            junction = createCrosswalk(junction, node)
 
-    # is it a traffic light ?
-    if "traffic_signals" in node:
-        junction = createTrafficSignal(junction, node)
+        # is it a traffic light ?
+        if "traffic_signals" in node:
+            junction = createTrafficSignal(junction, node)
+
+        _junctions[node_id] = junction
 
     return junction
 

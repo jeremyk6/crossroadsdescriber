@@ -9,8 +9,9 @@ from toolz import unique
 from lib.jsRealBclass import N,A,Pro,D,Adv,V,C,P,DT,NO,Q,  NP,AP,AdvP,VP,CP,PP,S,SP,  Constituent, Terminal, Phrase, jsRealB
 import lib.crseg.segmentation as cs
 import osmnx as ox
+import networkx as nx
 from config import *
-from geojson import LineString, Feature, FeatureCollection, dump
+from geojson import Point, LineString, Feature, FeatureCollection, dump
 
 #
 # Configuration
@@ -22,7 +23,8 @@ parser.add_argument('-c', '--by-coordinates', nargs=2, help='Load input from OSM
 parser.add_argument('-f', '--file', nargs=1, help='Load .osm file instead of using Overpass', type=str)
 parser.add_argument('-nc', '--no-clear-cache', help='Do not clear cached datas', action='store_true')
 parser.add_argument('-o', '--output', nargs=1, help='Output a JSON file.', type=str)
-parser.add_argument('-geojson', '--output-geojson', nargs=1, help='Output a JSON file.', type=str)
+parser.add_argument('-or', '--output-roads', nargs=1, help='Output a GeoJSON file containing the roads with added semantics about sidewalks and islands.', type=str)
+parser.add_argument('-op', '--output-pedestrian', nargs=1, help='Output a GeoJSON file containing the derived pedestrian graph.', type=str)
 args = parser.parse_args()
 
 # create / clean basic folder structure
@@ -125,6 +127,7 @@ for branch in seg_crossroad.branches:
         for i in range(len(azimuths)):
             if azimuths[i] >= 270 : azimuths[i] -= 360
     azimuths, ways = (list(t) for t in zip(*sorted(zip(azimuths, ways))))
+    # Casse ici : 45.77340 3.09223 WTF ?!
 
     # compute mean angle by branch
     mean_angle = meanAngle(G, border_nodes, crossroad_center)
@@ -158,8 +161,10 @@ G.remove_edges_from(to_remove)
 #
 
 # Get sidewalks
+sidewalks = []
 for sidewalk_id, sidewalk_path in enumerate(getSidewalks(G, branches, crossroad_border_nodes)):
     sidewalk = Sidewalk(sidewalk_id)
+    sidewalks.append(sidewalk)
     for j, node in enumerate(sidewalk_path):
         if j < len(sidewalk_path)-1:
             n1 = sidewalk_path[j]
@@ -178,15 +183,21 @@ for sidewalk_id, sidewalk_path in enumerate(getSidewalks(G, branches, crossroad_
                 way.sidewalks[0] = sidewalk
             else:
                 way.sidewalks[1] = sidewalk
+            # add pedestrian nodes to the crosswalks in the way
+            for junction in way.junctions:
+                if "Crosswalk" in junction.type:
+                    if sidewalk not in junction.pedestrian_nodes:
+                        junction.pedestrian_nodes.append(sidewalk)
 
 # Get islands in the crossroads
-islands = getIslands(G, branches, crossroad_border_nodes)
-for island_id, island_path in enumerate(islands):
+islands = []
+for island_id, island_path in enumerate(getIslands(G, branches, crossroad_border_nodes)):
     if not isPolygonClockwiseOrdered(island_path, G):
         island_path = list(reversed(island_path))
     # island is not closed by NetworkX, we close it
     island_path.append(island_path[0])
     island = Island(island_id)
+    islands.append(island)
     for j, node in enumerate(island_path):
         if j < len(island_path)-1:
             n1 = island_path[j]
@@ -201,6 +212,40 @@ for island_id, island_path in enumerate(islands):
                     way.islands[1] = island
                 else:
                     way.islands[0] = island
+                # add pedestrian nodes to the crosswalks in the way
+                for junction in way.junctions:
+                    if "Crosswalk" in junction.type:
+                        if island not in junction.pedestrian_nodes:
+                            junction.pedestrian_nodes.append(island)
+
+#
+# Crossings creation
+#
+
+crosswalks = Junction.getJunctions("Crosswalk")
+
+# create dual graph
+pG = nx.Graph()
+for crosswalk in crosswalks:
+    pG.add_edge(
+        "s%s"%crosswalk.pedestrian_nodes[0].id if isinstance(crosswalk.pedestrian_nodes[0], Sidewalk) else "i%s"%crosswalk.pedestrian_nodes[0].id, 
+        "s%s"%crosswalk.pedestrian_nodes[1].id if isinstance(crosswalk.pedestrian_nodes[1], Sidewalk) else "i%s"%crosswalk.pedestrian_nodes[1].id, 
+        crosswalk=crosswalk
+    )
+
+# compute crossings
+crossings = {}
+for sidewalk_start in sidewalks:
+    for sidewalk_end in list(set(sidewalks) - set([sidewalk_start])):
+        try:
+            crossing = nx.shortest_path(pG, "s%s"%sidewalk_start.id, "s%s"%sidewalk_end.id)
+        except: # this sidewalk can't be reached
+            continue
+        crossing_id = ";".join(crossing)
+        if crossing_id.count("s") <= 2: # we keep paths that don't go through other sidewalks
+            if crossing_id not in crossings.keys() and ";".join(crossing_id.split(";")[::-1]) not in crossings.keys():
+                crosswalk_list = [pG[crossing[i]][crossing[i+1]]["crosswalk"] for i in range(len(crossing)-1)]
+                crossings[crossing_id] = Crossing(crossing_id, crosswalk_list)
 
 #
 # Crossroad creation
@@ -432,7 +477,7 @@ if args.output:
     outputJSON("output/"+args.output[0], {**crossroad_inner_nodes, **crossroad_border_nodes}, branches, general_desc, branches_desc, crossings_desc)
 
 # geojson output
-if args.output_geojson:
+if args.output_roads:
     features = []
     for way in crossroad_edges.values():
         n1 = way.junctions[0]
@@ -445,8 +490,24 @@ if args.output_geojson:
             "left_island" : way.islands[0].id if way.islands[0] else "",
             "right_island" : way.islands[1].id if way.islands[1] else ""
         }))
-    with open("output/"+args.output_geojson[0], "w") as f:
+    with open("output/"+args.output_roads[0], "w") as f:
         dump(FeatureCollection(features), f)
+
+if args.output_pedestrian:
+    features = []
+    for crossing in crossings.values():
+        crosswalks = crossing.crosswalks
+        geom = None
+        if len(crosswalks) > 1:
+            geom = LineString([(crosswalks[i].x, crosswalks[i].y) for i in range(len(crosswalks))])
+        else:
+            geom = Point([crosswalks[0].x, crosswalks[0].y])
+        features.append(Feature(geometry=geom, properties={
+            "id" : crossing.id,
+        }))
+    with open("output/"+args.output_pedestrian[0], "w") as f:
+        dump(FeatureCollection(features), f)
+
 
 # display crossroad and save image
 cr = seg.get_crossroad(longitude, latitude)
