@@ -291,6 +291,8 @@ from urllib.error import URLError
 
 serverURL = "http://127.0.0.1:8081"
 
+def jsRealB_setServerURL(url):
+    serverURL = url
 
 def jsRealB(exp, lang="fr"):
     params = urlencode({"lang":lang, "exp":exp})

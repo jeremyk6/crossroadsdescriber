@@ -86,62 +86,6 @@ def meanAngle(G, border_nodes, crossroad_center):
     mean_angle /= len(border_nodes)
     return mean_angle
 
-def outputJSON(filename, junctions, branches, general_desc, branches_desc, crossings_desc):
-    data = {}
-    
-    data["introduction"] = general_desc
-    
-    data["branches"] = []
-    for (branch, branch_desc, crossing_desc) in zip(branches, branches_desc, crossings_desc):
-        crossing_desc = crossing_desc.split(" ")[4:]
-        crossing_desc.insert(0, "Elle")
-        nodes = []
-        for way in branch.ways:
-            nodes.append([junction.id for junction in way.junctions])
-        data["branches"].append({
-            "nodes" : nodes,
-            "text" : branch_desc + " " + " ".join(crossing_desc),
-            "tags" : {
-                "auto" : "yes"
-            }
-        })
-    
-    crosswalks = []
-    for junction in junctions.values():
-        if "Crosswalk" in junction.type:
-            crosswalks.append(junction)
-
-    data["crossings"] = []
-    for crosswalk in crosswalks:
-        crosswalk_desc = "Le passage piéton "
-
-        if "Pedestrian_traffic_light" in crosswalk.type:
-            crosswalk_desc += "est protégé par un feu"
-            if crosswalk.ptl_sound == "yes":
-                crosswalk_desc += " sonore. "
-            else :
-                crosswalk_desc += ". "
-        else:
-            crosswalk_desc += "n'est pas protégé par un feu. "
-
-        if crosswalk.cw_tactile_paving == "yes":
-            crosswalk_desc += "Il y a des bandes d'éveil de vigilance."
-        elif crosswalk.cw_tactile_paving == "incorrect":
-            crosswalk_desc += "Il manque des bandes d'éveil de vigilance ou celles-ci sont dégradées."
-        else:
-            crosswalk_desc += "Il n'y a pas de bandes d'éveil de vigilance."
-
-        data["crossings"].append({
-            "node" : crosswalk.id,
-            "text" : crosswalk_desc,
-            "tags" : {
-                "auto" : "yes"
-            }
-        })
-
-    with open(filename, 'w') as outfile:
-        json.dump(data, outfile, ensure_ascii=False)
-
 # Detect islands by closing branches with multiple ways, then by detecting faces
 def getIslands(G, branches, crossroad_border_nodes):
     tG = nx.Graph(G)
