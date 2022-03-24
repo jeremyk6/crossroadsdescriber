@@ -3,7 +3,7 @@
 import shutil
 import argparse
 import osmnx as ox
-import lib.crseg.segmentation as cs
+import crseg.segmentation as cs
 import crdesc.description as cd
 import crdesc.config as config
 
@@ -61,7 +61,7 @@ G = cs.Segmentation.remove_footways_and_parkings(G, False)
 # build an undirected version of the graph
 G = ox.utils_graph.get_undirected(G)
 # segment it using topology and semantic
-seg = cs.Segmentation(G, connection_intensity = connection_intensity, max_cycle_elements = max_cycle_elements)
+seg = cs.Segmentation(G)
 seg.process()
 seg.to_json("data/intersection.json", longitude, latitude)
 
