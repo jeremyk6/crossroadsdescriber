@@ -16,9 +16,7 @@ parser = argparse.ArgumentParser(description="Build a basic description of the c
 parser.add_argument('-c', '--by-coordinates', nargs=2, help='Load input from OSM using the given latitude', type=float)
 parser.add_argument('-f', '--file', nargs=1, help='Load .osm file instead of using Overpass', type=str)
 parser.add_argument('-nc', '--no-clear-cache', help='Do not clear cached datas', action='store_true')
-parser.add_argument('-o', '--output', nargs=1, help='Output a JSON file.', type=str)
-parser.add_argument('-or', '--output-roads', nargs=1, help='Output a GeoJSON file containing the roads with added semantics about sidewalks and islands.', type=str)
-parser.add_argument('-op', '--output-pedestrian', nargs=1, help='Output a GeoJSON file containing the derived pedestrian graph.', type=str)
+parser.add_argument('-o', '--output', nargs='*', help='Output files containing the description in text, JSON or GeoJSON format (according to the extension of the file).', type=str)
 args = parser.parse_args()
 
 # create / clean basic folder structure
@@ -72,27 +70,19 @@ desc.computeModel(G, "data/intersection.json", xmlfile)
 description = desc.generateDescription("http://localhost:8081")
 
 print(description["text"])
-output = open("output/description.txt", "w")
-output.write(description["text"])
-output.close()
 
-# json output
+# File output
 if args.output:
+    filename = args.output[0]
+    extension = filename.split('.')[-1].lower()
     with open("output/"+args.output[0], "w") as f:
-        f.write(desc.descriptionToJSON(description["structure"]))
+        content = description["text"]
+        if extension == "geojson":
+            content = desc.getGeoJSON(description["structure"])
+        if extension == "json":
+            content = desc.descriptionToJSON(description["structure"])
+        f.write(content)
         f.close()
-
-# geojson output
-if args.output_roads:
-    with open("output/"+args.output_roads[0], "w") as f:
-        f.write(desc.getSidewalksAndIslands())
-        f.close()
-
-if args.output_pedestrian:
-    with open("output/"+args.output_pedestrian[0], "w") as f:
-        f.write(desc.getCrossings())
-        f.close()
-
 
 # display crossroad and save image
 cr = seg.get_crossroad(longitude, latitude)

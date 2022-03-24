@@ -155,9 +155,10 @@ class Branch():
 
 class Intersection():
 
-    def __init__(self, type, branches : Branch):
+    def __init__(self, type, branches : Branch, center):
         self.type = type
         self.branches = branches
+        self.center = center
 
 #
 # Object creation function

@@ -117,7 +117,7 @@ class Description:
                             way = crossroad_edges[id]
                     # if the way does not exist we create it (may not happen but sometimes it is)
                     if not way:
-                        way = createWay([n1,n2], G, xmlfile=xmlfile)
+                        way = createWay([n1,n2], G, xmlfile=xml_file)
                         crossroad_edges[id] = way
                     # if the sidewalk goes in the same direction as the way, it's the left sidewalk. Otherwise it's the right one.
                     if way.junctions[0].id == n1:
@@ -192,7 +192,7 @@ class Description:
         # Crossroad creation
         #
 
-        self.crossroad = Intersection(None, branches)
+        self.crossroad = Intersection(None, branches, crossroad_center)
         self.crossroad.junctions = {**crossroad_inner_nodes, **crossroad_border_nodes}
         self.crossroad.ways = crossroad_edges
         self.crossroad.crossings = crossings
@@ -487,24 +487,48 @@ class Description:
 
         return(json.dumps(data, ensure_ascii=False))
 
-    def getSidewalksAndIslands(self):
+    def getGeoJSON(self, description_structure):
         features = []
-        for way in self.crossroad.ways.values():
-            n1 = way.junctions[0]
-            n2 = way.junctions[1]
-            features.append(Feature(geometry=LineString([(n1.x, n1.y), (n2.x, n2.y)]), properties={
-                "id" : way.id,
-                "name" : way.name,
-                "left_sidewalk" : way.sidewalks[0].id if way.sidewalks[0] else "",
-                "right_sidewalk" : way.sidewalks[1].id if way.sidewalks[1] else "",
-                "left_island" : way.islands[0].id if way.islands[0] else "",
-                "right_island" : way.islands[1].id if way.islands[1] else ""
-            }))
-        return(dumps(FeatureCollection(features)))
 
-    def getCrossings(self):
-        features = []
-        for crossing in self.crossroad.crossings.values():
+        # Crossroad general description
+        features.append(Feature(geometry=Point([self.crossroad.center["x"], self.crossroad.center["y"]]), properties={
+            "type" : "crossroads",
+            "description" : description_structure["general_desc"]
+        }))
+
+        # Crossroad branch description
+        branches_ways = []
+        for (branch, branch_desc) in zip(self.crossroad.branches, description_structure["branches_desc"]):
+            for way in branch.ways:
+                n1 = way.junctions[0]
+                n2 = way.junctions[1]
+                features.append(Feature(geometry=LineString([(n1.x, n1.y), (n2.x, n2.y)]), properties={
+                    "type" : "branch",
+                    "name" : way.name,
+                    "description" : branch_desc,
+                    "left_sidewalk" : way.sidewalks[0].id if way.sidewalks[0] else "",
+                    "right_sidewalk" : way.sidewalks[1].id if way.sidewalks[1] else "",
+                    "left_island" : way.islands[0].id if way.islands[0] else "",
+                    "right_island" : way.islands[1].id if way.islands[1] else ""
+                }))
+                branches_ways.append(way)
+        
+        # Crossroad ways
+        for way in self.crossroad.ways.values():
+            if way not in branches_ways:
+                n1 = way.junctions[0]
+                n2 = way.junctions[1]
+                features.append(Feature(geometry=LineString([(n1.x, n1.y), (n2.x, n2.y)]), properties={
+                    "type" : "way",
+                    "name" : way.name,
+                    "left_sidewalk" : way.sidewalks[0].id if way.sidewalks[0] else "",
+                    "right_sidewalk" : way.sidewalks[1].id if way.sidewalks[1] else "",
+                    "left_island" : way.islands[0].id if way.islands[0] else "",
+                    "right_island" : way.islands[1].id if way.islands[1] else ""
+                }))
+
+        # Crossings description
+        for crossing, crossing_desc in zip(self.crossroad.crossings.values(), description_structure["crossings_desc"]):
             crosswalks = crossing.crosswalks
             geom = None
             if len(crosswalks) > 1:
@@ -512,6 +536,8 @@ class Description:
             else:
                 geom = Point([crosswalks[0].x, crosswalks[0].y])
             features.append(Feature(geometry=geom, properties={
-                "id" : crossing.id,
+                "type" : "crossing",
+                "description" : crossing_desc
             }))
+
         return(dumps(FeatureCollection(features)))
