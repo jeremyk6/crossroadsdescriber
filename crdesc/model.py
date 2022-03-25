@@ -60,12 +60,6 @@ class JunctionDecorator(AbstractJunction):
 
 # Concrete decorators
 
-# Bikebox decorator
-class Bikebox(JunctionDecorator):
-
-    def __init__(self, decorated_junction, bb_distance_from_tl):
-        super().__init__(decorated_junction, {'bb_distance_from_tl' : bb_distance_from_tl})
-
 # Crosswalk decorator
 class Crosswalk(JunctionDecorator):
 
@@ -83,12 +77,6 @@ class Traffic_light(JunctionDecorator):
 
     def __init__(self, decorated_junction, tl_phase, tl_direction):
         super().__init__(decorated_junction, {'tl_phase' : tl_phase, 'tl_direction' : tl_direction})
-
-# Yield decorator
-class Yield(JunctionDecorator):
-
-    def __init__(self, decorated_junction, yd_direction, yd_way):
-        super().__init__(decorated_junction, {'yd_direction' : yd_direction, 'yd_way' : yd_way})
 
 #
 # Crossings

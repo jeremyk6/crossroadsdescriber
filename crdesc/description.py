@@ -392,12 +392,6 @@ class Description:
                         crossing_desc += "Il manque des bandes d'éveil de vigilance ou celles-ci sont dégradées."
                 else:
                     crossing_desc += "Il n'y a pas de bandes d'éveil de vigilance."
-
-            # TODO 
-            # add bikeboxes sentence in outgoing lanes if any
-
-            # TODO
-            # add, for islands, if difficult movements need to be made
                 
             crossings_desc.append("La branche numéro %s %s. %s"%(jsRealB(number), "se traverse en %s fois"%jsRealB(n_crosswalks) if len(crosswalks) else "ne se traverse pas", crossing_desc))
 
