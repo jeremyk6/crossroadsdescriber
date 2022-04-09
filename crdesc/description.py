@@ -51,10 +51,10 @@ class Description:
 
                 # keep border nodes
                 border_node = None
-                if edge[0] in branch.border_nodes:
+                if edge[0] in branch.border_nodes and edge[0] not in border_nodes:
                     border_nodes.append(edge[0])
                     border_node = G.nodes[edge[0]]
-                if edge[1] in branch.border_nodes:
+                if edge[1] in branch.border_nodes and edge[1] not in border_nodes:
                     border_nodes.append(edge[1])
                     border_node = G.nodes[edge[1]]
 
