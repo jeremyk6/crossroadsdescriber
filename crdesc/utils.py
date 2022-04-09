@@ -4,6 +4,7 @@ from xml.dom import minidom
 import math
 from os import path
 from datetime import datetime
+from scipy.stats import circmean
 import itertools
 import osmnx as ox
 import networkx as nx
@@ -75,15 +76,11 @@ def meanCoordinates(G, nodes):
 
 # Compute mean angle (azimuth) of a branch (represented by its border nodes) from the center of the crossroad
 def meanAngle(G, border_nodes, crossroad_center):
-    mean_angle = 0
+    angles = []
     for border_node in border_nodes:
         border_node = G.nodes[border_node]
-        angle = azimuthAngle(crossroad_center["x"], crossroad_center["y"], border_node["x"], border_node["y"])
-        # if angle is near to 0°, revert it to -X° to enable mean angle calculation
-        if angle > 315 :
-            angle -= 360
-        mean_angle += angle
-    mean_angle /= len(border_nodes)
+        angles.append(azimuthAngle(crossroad_center["x"], crossroad_center["y"], border_node["x"], border_node["y"]))
+    mean_angle = circmean(angles, 0, 360)
     return mean_angle
 
 # Detect islands by closing branches with multiple ways, then by detecting faces
