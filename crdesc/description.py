@@ -82,6 +82,9 @@ class Description:
 
         # order branch by angle
         branches.sort(key=lambda b: b.angle)
+        # if the last branch is the nearest to the north, we make it the first
+        if 360-branches[-1].angle < branches[0].angle:
+            branches.insert(0, branches.pop())
 
         # branch number : number branches according to their clockwise order
         for i, branch in enumerate(branches): 
