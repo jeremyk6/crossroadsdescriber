@@ -188,6 +188,28 @@ class Description:
                         crosswalk_list = [pG[crossing[i]][crossing[i+1]]["crosswalk"] for i in range(len(crossing)-1)]
                         crossings[crossing_id] = Crossing(crossing_id, crosswalk_list)
 
+        # attach crossings to a branch
+        for branch in branches:
+
+            # Retrieve branch sidewalks
+            branch_sidewalks = []
+            for items in [way.sidewalks for way in branch.ways]:
+                for sidewalk in items:
+                    if sidewalk is not None and sidewalk not in branch_sidewalks:
+                        branch_sidewalks.append(sidewalk)
+            
+            # Retrieve crossing sidewalks
+            for crossing in crossings.values():
+                crossing_sidewalks = []
+                for crosswalk in crossing.crosswalks:
+                    for pedestrian_node in crosswalk.pedestrian_nodes:
+                        if isinstance(pedestrian_node, Sidewalk):
+                            crossing_sidewalks.append(pedestrian_node)
+                # If the branch and the crossing share the same sidewalks, it's the branch's corssing
+                if branch_sidewalks == crossing_sidewalks or branch_sidewalks[::-1] == crossing_sidewalks:
+                    branch.set_crossing(crossing)
+                    break
+
         #
         # Crossroad creation
         #

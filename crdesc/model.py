@@ -136,6 +136,10 @@ class Branch():
         self.direction_name = direction_name
         self.street_name = street_name
         self.ways = ways
+        self.crossing = None
+
+    def set_crossing(self, crossing):
+        self.crossing = crossing
 
 #
 # Intersection
