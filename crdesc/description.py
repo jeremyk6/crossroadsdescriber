@@ -538,7 +538,9 @@ class Description:
                 }))
 
         # Crossings description
-        for crossing, crossing_desc in zip(self.crossroad.crossings.values(), description_structure["crossings_desc"]):
+        for crossing, crossing_desc in zip([branch.crossing for branch in self.crossroad.branches], description_structure["crossings_desc"]):
+            if crossing is None:
+                continue
             crosswalks = crossing.crosswalks
             geom = None
             if len(crosswalks) > 1:
