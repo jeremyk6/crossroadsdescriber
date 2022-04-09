@@ -514,7 +514,7 @@ class Description:
                 n2 = way.junctions[1]
                 features.append(Feature(geometry=LineString([(n1.x, n1.y), (n2.x, n2.y)]), properties={
                     "type" : "branch",
-                    "name" : way.name,
+                    "name" : "branch n°%s | %s"%(branch.number,way.name),
                     "description" : branch_desc,
                     "left_sidewalk" : way.sidewalks[0].id if way.sidewalks[0] else "",
                     "right_sidewalk" : way.sidewalks[1].id if way.sidewalks[1] else "",
