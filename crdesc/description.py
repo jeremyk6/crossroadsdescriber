@@ -371,13 +371,7 @@ class Description:
             number = NO(branch.number).dOpt({"nat": True})
 
             name = " ".join(branch.street_name)
-            crosswalks = []
-
-            for way in branch.ways:
-                
-                for junction in way.junctions:
-                    if "Crosswalk" in junction.type:
-                        crosswalks.append(junction)
+            crosswalks = branch.crossing.crosswalks if branch.crossing is not None else []
 
             crossing_desc = ""
             if len(crosswalks):
