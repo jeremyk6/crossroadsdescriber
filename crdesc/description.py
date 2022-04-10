@@ -168,6 +168,17 @@ class Description:
 
         crosswalks = Junction.getJunctions("Crosswalk")
 
+
+        # if two crosswalks share the same pedestrian nodes, choose the nearest to the crossroads
+        to_delete = []
+        for c1 in crosswalks:
+            for c2 in crosswalks:
+                if c1 != c2:
+                    if c1.pedestrian_nodes == c2.pedestrian_nodes or c1.pedestrian_nodes[::-1] == c2.pedestrian_nodes:
+                        if c1.id in [n.id for n in crossroad_border_nodes.values()]:
+                            to_delete.append(c2)
+        for d in to_delete: crosswalks.remove(d)
+
         # create dual graph
         pG = nx.Graph()
         for crosswalk in crosswalks:
