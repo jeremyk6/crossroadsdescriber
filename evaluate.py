@@ -78,7 +78,7 @@ G = ox.utils_graph.get_undirected(G)
 # segment it using topology and semantic
 seg = cs.Segmentation(G, C0 = 2, C1 = 2, C2 = 4, max_cycle_elements = 10)
 seg.process()
-seg.to_json_all("data/intersection.json", True)
+seg.to_json_all("data/intersection.json", False)
 
 # generate evaluation file
 with open("data/intersection.json") as json_file:
