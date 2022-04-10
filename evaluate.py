@@ -4,6 +4,7 @@ from audioop import cross
 import shutil
 import argparse
 import json
+import random
 from copy import deepcopy
 import osmnx as ox
 import crseg.segmentation as cs
@@ -21,6 +22,7 @@ parser = argparse.ArgumentParser(description="Create an evaluation file for the 
 parser.add_argument('-c', '--by-coordinates', nargs=2, help='Load input from OSM using the given latitude', type=float)
 parser.add_argument('-f', '--file', nargs=1, help='Load .osm file instead of using Overpass', type=str)
 parser.add_argument('-r', '--radius', nargs=1, help='Give a radius to load the data from.', type=float)
+parser.add_argument('-n', '--number', nargs=1, help='Set the number of crossroads to evaluate.', type=int)
 parser.add_argument('-nc', '--no-clear-cache', help='Do not clear cached datas', action='store_true')
 parser.add_argument('-o', '--output', nargs='*', help='Output the JSON evaluation file.', type=str)
 args = parser.parse_args()
@@ -62,6 +64,10 @@ if not args.output :
     print("You must give an output filename.")
     exit()
 
+if not args.output :
+    print("You must give a number of crossroads.")
+    exit()
+
 # graph segmentation (from https://gitlab.limos.fr/jmafavre/crossroads-segmentation/-/blob/master/src/get-crossroad-description.py)
 
 # remove sidewalks, cycleways, service ways
@@ -79,27 +85,39 @@ with open("data/intersection.json") as json_file:
 
     crossroads = json.load(json_file)
 
+    n = args.number[0]
+    if n > len(crossroads):
+        print("Warning : number of available crossroads inferior to the number of wanted crossroads.")
+        n = len(crossroads)
+
+    crossroads_numbers = random.sample(range(len(crossroads)),n)
+
     evaluated = []
 
+    i = 1
     for number, crossroad in enumerate(crossroads):
 
-        # generate single crossroad json file
-        with open("data/evaluated.json", "w") as evaluated_crossroad:
-            json.dump([crossroad], evaluated_crossroad)
-            evaluated_crossroad.close()
+        if number in crossroads_numbers:
+            # generate single crossroad json file
+            with open("data/evaluated.json", "w") as evaluated_crossroad:
+                json.dump([crossroad], evaluated_crossroad)
+                evaluated_crossroad.close()
 
-        # then generate the description
-        try:
-            crdesc.model._junctions.clear()
-            desc = cd.Description()
-            desc.computeModel(deepcopy(G), "data/evaluated.json", None)
-            description = desc.generateDescription("http://localhost:8081")
-            crossroad[0]["description"] = description["text"]
-        except:
-            crossroad[0]["description"] = "error"
-        
-        evaluated.append(crossroad)
+            # then generate the description
+            try:
+                crdesc.model._junctions.clear()
+                desc = cd.Description()
+                desc.computeModel(deepcopy(G), "data/evaluated.json", None)
+                description = desc.generateDescription("http://localhost:8081")
+                crossroad[0]["description"] = description["text"]
+            except:
+                crossroad[0]["description"] = "error"
             
+            evaluated.append(crossroad)
+
+            print("Crossroads %s / %s"%(i,n))
+            i += 1
+                    
     # generate single crossroad json file
     with open("data/%s"%args.output[0], "w") as evaluation_file:
         json.dump(evaluated, evaluation_file)
