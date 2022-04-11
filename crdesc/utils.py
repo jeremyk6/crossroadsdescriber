@@ -172,11 +172,13 @@ def isPolygonClockwiseOrdered(polygon, G):
         sum += (x2 - x1)*(y2 + y1)
     return sum >= 0
 
-def remove_service_ways(G):
+def remove_unwanted_ways(G):
     to_remove = []
     for u, v, a in G.edges(data = True):
-        if "service" in a :
-            to_remove.append((u, v))                
+        if "highway" in a and a["highway"]=="service" and "psv" not in a:
+            to_remove.append((u, v))
+        if "highway" in a and a["highway"]=="residential":
+            to_remove.append((u, v))           
     G.remove_edges_from(to_remove)
     G = ox.utils_graph.remove_isolated_nodes(G)
     if len(G.nodes) != 0:
