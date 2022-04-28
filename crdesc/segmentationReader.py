@@ -18,7 +18,9 @@ class SegmentedBranch():
 class SegmentationReader():
 
     def __init__(self, path):
-        self.data = json.load(open(path))
+        json_file = open(path)
+        self.data = json.load(json_file)
+        json_file.close()
         self.crossroads = []
 
         # If there is more than one crossroad

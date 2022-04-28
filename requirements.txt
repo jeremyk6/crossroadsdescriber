@@ -1,0 +1,6 @@
+--extra-index-url https://test.pypi.org/simple/
+osmnx
+argparse
+geojson
+toolz
+crossroads-segmentation==0.1.1
