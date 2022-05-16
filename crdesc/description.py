@@ -516,6 +516,7 @@ class Description:
 
         # Crossroad general description
         features.append(Feature(geometry=Point([self.crossroad.center["x"], self.crossroad.center["y"]]), properties={
+            "id" : None,
             "type" : "crossroads",
             "description" : description_structure["general_desc"]
         }))
@@ -527,6 +528,7 @@ class Description:
                 n1 = way.junctions[0]
                 n2 = way.junctions[1]
                 features.append(Feature(geometry=LineString([(n1.x, n1.y), (n2.x, n2.y)]), properties={
+                    "id" : "%s;%s"%(n1.id, n2.id),
                     "type" : "branch",
                     "name" : "branch n°%s | %s"%(branch.number,way.name),
                     "description" : branch_desc,
@@ -543,6 +545,7 @@ class Description:
                 n1 = way.junctions[0]
                 n2 = way.junctions[1]
                 features.append(Feature(geometry=LineString([(n1.x, n1.y), (n2.x, n2.y)]), properties={
+                    "id" : "%s;%s"%(n1.id, n2.id),
                     "type" : "way",
                     "name" : way.name,
                     "left_sidewalk" : way.sidewalks[0].id if way.sidewalks[0] else "",
@@ -557,11 +560,15 @@ class Description:
                 continue
             crosswalks = crossing.crosswalks
             geom = None
+            id = None
             if len(crosswalks) > 1:
+                id = ";".join(map(str,[crosswalks[i].id for i in range(len(crosswalks))]))
                 geom = LineString([(crosswalks[i].x, crosswalks[i].y) for i in range(len(crosswalks))])
             else:
+                id = crosswalks[0].id
                 geom = Point([crosswalks[0].x, crosswalks[0].y])
             features.append(Feature(geometry=geom, properties={
+                "id" : id,
                 "type" : "crossing",
                 "description" : crossing_desc
             }))
