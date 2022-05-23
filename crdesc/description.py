@@ -1,7 +1,7 @@
 from .model import *
 from .segmentationReader import *
 from .utils import *
-from .jsRealBclass import *
+from pyrealb import *
 from toolz import unique
 import osmnx as ox
 import networkx as nx
@@ -236,14 +236,22 @@ class Description:
     #
     # Text generation
     #
-    # Dependencies : a jsRealB server
     # Returns : a dict with a text attribute containing the description, and a structure attribute containing the non-concatenated description
     #
 
-    def generateDescription(self, jsrealb_server_url):
+    def generateDescription(self):
 
-        # Set jsRealB server URL
-        jsRealB_setServerURL(jsrealb_server_url)
+        # Load PyRealB french lexicon and add missing words
+        loadFr()
+        addToLexicon("pyramide", {"N":{"g":"f","tab":["n17"]}})
+        addToLexicon("viaduc", {"N":{"g":"m","tab":["n3"]}})
+        addToLexicon("croisement", {"N":{"g":"m","tab":["n3"]}})
+        addToLexicon("bus", {"N":{"g":"m","tab":["n3"]}})
+        addToLexicon("îlot", {"N":{"g":"m","tab":["n3"]}})
+        addToLexicon("tourne-à-gauche", {"N":{"g":"m","tab":["n3"]}})
+        addToLexicon("tourne-à-droite", {"N":{"g":"m","tab":["n3"]}})
+        addToLexicon("entrant", {"A":{"tab":["n28"]}})
+        addToLexicon("sortant", {"A":{"tab":["n28"]}})
 
         #
         # General description
@@ -262,7 +270,7 @@ class Description:
                     )
                 )
             )
-        general_desc = "Le carrefour à l'intersection %s est un carrefour à %s branches."%(jsRealB(s), len(self.crossroad.branches))
+        general_desc = "Le carrefour à l'intersection %s est un carrefour à %s branches."%(s, len(self.crossroad.branches))
 
         #
         # Branches description
@@ -318,13 +326,12 @@ class Description:
                         )
                     )
                 )
-            channels_in_desc = jsRealB(channels_in_desc)
             if channels_in:
                 word = "entrante"
                 
                 if n > 1:
                     word += "s"
-                channels_in_desc += " %s"%word
+                channels_in_desc = "%s %s"%(channels_in_desc, word)
 
             for type,n in channels_out.items():
                 channels_out_desc.add(
@@ -337,14 +344,13 @@ class Description:
                         )
                     )
                 )
-            channels_out_desc = jsRealB(channels_out_desc)
             if channels_out:
                 word = "sortante"
                 if n > 1:
                     word += "s"
-                channels_out_desc += " %s"%word
+                channels_out_desc = "%s %s"%(channels_out_desc, word)
 
-            branch_desc = "La branche numéro %s qui s'appelle %s est composée %s : %s%s%s."%(jsRealB(number), name, jsRealB(n_voies), channels_out_desc, ", et " if channels_in_desc and channels_out_desc else "", channels_in_desc)
+            branch_desc = "La branche numéro %s qui s'appelle %s est composée %s : %s%s%s."%(number, name, n_voies, channels_out_desc, ", et " if channels_in and channels_out else "", channels_in_desc)
 
             # post process to remove ':' and duplicate information if there's only one type of way in one direction
             branch_desc = branch_desc.split(" ")
@@ -423,7 +429,7 @@ class Description:
                 else:
                     crossing_desc += "Il n'y a pas de bandes d'éveil de vigilance."
                 
-            crossings_desc.append("La branche numéro %s %s. %s"%(jsRealB(number), "se traverse en %s fois"%jsRealB(n_crosswalks) if len(crosswalks) else "ne se traverse pas", crossing_desc))
+            crossings_desc.append("La branche numéro %s %s. %s"%(number, "se traverse en %s fois"%n_crosswalks if len(crosswalks) else "ne se traverse pas", crossing_desc))
 
         #
         # Print description

@@ -65,7 +65,7 @@ seg.to_json("data/intersection.json", longitude, latitude)
 
 desc = cd.Description()
 desc.computeModel(G, "data/intersection.json", xmlfile)
-description = desc.generateDescription("http://localhost:8081")
+description = desc.generateDescription()
 
 print(description["text"])
 
