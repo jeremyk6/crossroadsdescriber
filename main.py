@@ -56,7 +56,6 @@ else :
 
 # remove sidewalks, cycleways, service ways
 G = cs.Segmentation.remove_footways_and_parkings(G, False)
-G = crdesc.utils.remove_unwanted_ways(G)
 # build an undirected version of the graph
 G = ox.utils_graph.get_undirected(G)
 # segment it using topology and semantic
