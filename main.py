@@ -5,7 +5,7 @@ import argparse
 import osmnx as ox
 import crseg.segmentation as cs
 import crdesc.description as cd
-import crdesc.config as config
+import crdesc.config as cg
 
 #
 # Configuration
@@ -38,7 +38,7 @@ else:
 #
 
 # OSMnx configuration
-ox.config(use_cache=True, useful_tags_way = list(set(ox.settings.useful_tags_way + config.way_tags_to_keep)), useful_tags_node = list(set(ox.settings.useful_tags_node + config.node_tags_to_keep)))
+ox.config(use_cache=True, useful_tags_way = list(set(ox.settings.useful_tags_way + cg.way_tags_to_keep)), useful_tags_node = list(set(ox.settings.useful_tags_node + cg.node_tags_to_keep)))
 
 xmlfile = None
 if args.file :
