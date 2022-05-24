@@ -5,7 +5,6 @@ import argparse
 import osmnx as ox
 import crseg.segmentation as cs
 import crdesc.description as cd
-import crdesc.utils
 import crdesc.config as config
 
 #
