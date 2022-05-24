@@ -2,6 +2,7 @@
 
 import shutil
 import argparse
+import json
 import osmnx as ox
 import crseg.segmentation as cs
 import crdesc.description as cd
@@ -25,13 +26,24 @@ if not args.no_clear_cache:
     folders.append("cache")
 for dir in  folders : shutil.rmtree(dir, ignore_errors=True), shutil.os.mkdir(dir) 
 
+# import configuration file
+config = {}
+try:
+    with open('config.json', 'r') as file:
+        config = json.load(file)
+except: pass
+
 # use coordinates in parameters if presents, else use the coordinates of this intersection : https://www.openstreetmap.org/#map=19/45.77351/3.09015
 if args.by_coordinates:
     latitude = args.by_coordinates[0]
     longitude = args.by_coordinates[1]
 else:
-    latitude = 45.77351
-    longitude = 3.09015
+    try:
+        latitude = float(config["latitude"])
+        longitude = float(config["longitude"])
+    except:
+        latitude = 45.77351
+        longitude = 3.09015
 
 #
 # OSM data download
@@ -39,6 +51,8 @@ else:
 
 # OSMnx configuration
 ox.config(use_cache=True, useful_tags_way = list(set(ox.settings.useful_tags_way + cg.way_tags_to_keep)), useful_tags_node = list(set(ox.settings.useful_tags_node + cg.node_tags_to_keep)))
+if "overpass_url" in config:
+    ox.settings.overpass_endpoint = config["overpass_url"]
 
 xmlfile = None
 if args.file :
