@@ -560,6 +560,35 @@ class Description:
                     "right_island" : way.islands[1].id if way.islands[1] else ""
                 }))
 
+        # Single crosswalks descriptions
+        crosswalks = []
+        for junction in self.crossroad.junctions.values():
+            if "Crosswalk" in junction.type:
+                crosswalks.append(junction)
+        for crosswalk in crosswalks:
+            crosswalk_desc = "Le passage piéton "
+
+            if "Pedestrian_traffic_light" in crosswalk.type:
+                crosswalk_desc += "est protégé par un feu"
+                if crosswalk.ptl_sound == "yes":
+                    crosswalk_desc += " sonore. "
+                else :
+                    crosswalk_desc += ". "
+            else:
+                crosswalk_desc += "n'est pas protégé par un feu. "
+
+            if crosswalk.cw_tactile_paving == "yes":
+                crosswalk_desc += "Il y a des bandes d'éveil de vigilance."
+            elif crosswalk.cw_tactile_paving == "incorrect":
+                crosswalk_desc += "Il manque des bandes d'éveil de vigilance ou celles-ci sont dégradées."
+            else:
+                crosswalk_desc += "Il n'y a pas de bandes d'éveil de vigilance."
+            features.append(Feature(geometry=Point([crosswalk.x, crosswalk.y]), properties={
+                "id" : crosswalk.id,
+                "type" : "crosswalk",
+                "description" : crosswalk_desc
+            }))
+
         # Crossings description
         for crossing, crossing_desc in zip([branch.crossing for branch in self.crossroad.branches], description_structure["crossings_desc"]):
             if crossing is None:
