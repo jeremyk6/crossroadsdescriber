@@ -246,7 +246,6 @@ class Description:
         addToLexicon("pyramide", {"N":{"g":"f","tab":["n17"]}})
         addToLexicon("viaduc", {"N":{"g":"m","tab":["n3"]}})
         addToLexicon("croisement", {"N":{"g":"m","tab":["n3"]}})
-        addToLexicon("bus", {"N":{"g":"m","tab":["n3"]}})
         addToLexicon("îlot", {"N":{"g":"m","tab":["n3"]}})
         addToLexicon("tourne-à-gauche", {"N":{"g":"m","tab":["n3"]}})
         addToLexicon("tourne-à-droite", {"N":{"g":"m","tab":["n3"]}})
