@@ -24,7 +24,7 @@ setup(
         "Programming Language :: Python :: 3.7",
     ],
     install_requires=[
-        "osmnx",
+        "osmnx==1.1.2",
         "argparse",
         "geojson",
         "toolz",
