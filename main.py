@@ -3,6 +3,8 @@
 import shutil
 import argparse
 import json
+import requests
+import os
 import osmnx as ox
 import crseg.segmentation as cs
 import crdesc.description as cd
@@ -15,14 +17,15 @@ import crdesc.config as cg
 # configure arg parser
 parser = argparse.ArgumentParser(description="Build a basic description of the crossroad located at the requested coordinate.")
 parser.add_argument('-c', '--by-coordinates', nargs=2, help='Load input from OSM using the given latitude', type=float)
-parser.add_argument('-f', '--file', nargs=1, help='Load .osm file instead of using Overpass', type=str)
-parser.add_argument('-nc', '--no-clear-cache', help='Do not clear cached datas', action='store_true')
+parser.add_argument('-f', '--file', nargs=1, help='Load .osm file instead of downloading data', type=str)
+parser.add_argument('--overpass', help='Use Overpass to download data instead of the OSM api', action='store_true')
+parser.add_argument('-k', '--keep-cache', help='Do not clear cached datas', action='store_true')
 parser.add_argument('-o', '--output', nargs='*', help='Output files containing the description in text, JSON or GeoJSON format (according to the extension of the file).', type=str)
 args = parser.parse_args()
 
 # create / clean basic folder structure
 folders = ["data", "output"]
-if not args.no_clear_cache:
+if not args.keep_cache:
     folders.append("cache")
 for dir in  folders : shutil.rmtree(dir, ignore_errors=True), shutil.os.mkdir(dir) 
 
@@ -62,8 +65,14 @@ if args.file :
     else :
         print("You need to give the coordinate of the main crossroad to proceed.")
         exit
-else :
+elif args.overpass:
     G = ox.graph_from_point((latitude, longitude), dist=150, network_type="all", retain_all=False, truncate_by_edge=True, simplify=False)
+else:
+    if not os.path.exists('cache/osm.xml'):
+        r = requests.get("https://www.openstreetmap.org/api/0.6/map?bbox=%s,%s,%s,%s"%(longitude-0.002,latitude-0.002,longitude+0.002,latitude+0.002), allow_redirects=True)
+        open('cache/osm.xml', 'wb').write(r.content)
+    xmlfile = 'cache/osm.xml'
+    G = ox.graph_from_xml(xmlfile, simplify=False)
 
 # graph segmentation (from https://gitlab.limos.fr/jmafavre/crossroads-segmentation/-/blob/master/src/get-crossroad-description.py)
 
