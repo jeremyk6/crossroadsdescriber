@@ -81,7 +81,7 @@ G = cs.Segmentation.remove_footways_and_parkings(G, False)
 # build an undirected version of the graph
 undirected_G = ox.utils_graph.get_undirected(G)
 # segment it using topology and semantic
-seg = cs.Segmentation(undirected_G, C0 = 1, C1 = 2, C2 = 4, max_cycle_elements = 10)
+seg = cs.Segmentation(undirected_G, C0 = 2, C1 = 2, C2 = 4, max_cycle_elements = 10)
 seg.process()
 seg.to_json("data/intersection.json", longitude, latitude)
 
