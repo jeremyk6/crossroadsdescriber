@@ -79,14 +79,14 @@ else:
 # remove sidewalks, cycleways, service ways
 G = cs.Segmentation.remove_footways_and_parkings(G, False)
 # build an undirected version of the graph
-G = ox.utils_graph.get_undirected(G)
+undirected_G = ox.utils_graph.get_undirected(G)
 # segment it using topology and semantic
-seg = cs.Segmentation(G, C0 = 1, C1 = 2, C2 = 4, max_cycle_elements = 10)
+seg = cs.Segmentation(undirected_G, C0 = 1, C1 = 2, C2 = 4, max_cycle_elements = 10)
 seg.process()
 seg.to_json("data/intersection.json", longitude, latitude)
 
 desc = cd.Description()
-desc.computeModel(G, "data/intersection.json", xmlfile)
+desc.computeModel(G, "data/intersection.json")
 description = desc.generateDescription()
 
 print(description["text"])
@@ -105,7 +105,9 @@ if args.output:
         f.close()
 
 # display crossroad and save image
+for edge, color in seg.get_regions_colors_from_crossroad(seg.get_crossroad(longitude, latitude)).items():
+    if color == (0.5, 0.5, 0.5, 0.1): undirected_G.remove_edge(edge[0], edge[1])
 cr = seg.get_crossroad(longitude, latitude)
 ec = seg.get_regions_colors_from_crossroad(cr)
 nc = seg.get_nodes_regions_colors_from_crossroad(cr)
-ox.plot.plot_graph(G, edge_color=ec, node_color=nc, save=True, filepath="output/crossroad.png")
+ox.plot.plot_graph(undirected_G, edge_color=ec, node_color=nc, save=True, filepath="output/crossroad.png")

@@ -224,7 +224,7 @@ def createUndirectedLanes(edge, way, way_out):
         if edge["highway"]=="service" and "psv" in edge and edge["psv"]=="yes": type = "Bus"
         createLane(type, way, way_out)
 
-def createWay(edge, G, border_nodes=[], xmlfile=None):
+def createWay(edge, G, border_nodes=[]):
     n1 = edge[0]
     n2 = edge[1]
 
@@ -234,7 +234,6 @@ def createWay(edge, G, border_nodes=[], xmlfile=None):
     except:
         n1,n2 = n2,n1
         edge = G[n1][n2][0]
-    n1,n2 = getOriginalEdgeDirection(edge["osmid"], [n1,n2], xmlfile)
     
     # Note : access node attributes
     # ex. for x : G.nodes[n1].x

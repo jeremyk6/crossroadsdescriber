@@ -13,7 +13,7 @@ class Description:
 
         self.crossroad = None
 
-    def computeModel(self, G, segmentation_file, xml_file=None):
+    def computeModel(self, G, segmentation_file):
         #
         # Model completion
         #
@@ -35,7 +35,7 @@ class Description:
         crossroad_edges = {}
         for edge in seg_crossroad.edges_by_nodes:
             edge_id = "%s%s"%(edge[0],edge[1])
-            crossroad_edges[edge_id] = createWay(edge, G, xmlfile=xml_file)
+            crossroad_edges[edge_id] = createWay(edge, G)
 
         # branch creation
         id = 1
@@ -59,7 +59,7 @@ class Description:
                     border_node = G.nodes[edge[1]]
 
                 edge_id = "%s%s"%(edge[0],edge[1])
-                crossroad_edges[edge_id] = createWay(edge, G, seg_crossroad.border_nodes, xmlfile=xml_file)
+                crossroad_edges[edge_id] = createWay(edge, G, seg_crossroad.border_nodes)
                 ways.append(crossroad_edges[edge_id])
                 azimuths.append(azimuthAngle(crossroad_center["x"], crossroad_center["y"], border_node["x"], border_node["y"]))
 
@@ -120,7 +120,7 @@ class Description:
                             way = crossroad_edges[id]
                     # if the way does not exist we create it (may not happen but sometimes it is)
                     if not way:
-                        way = createWay([n1,n2], G, xmlfile=xml_file)
+                        way = createWay([n1,n2], G)
                         crossroad_edges[id] = way
                     # if the sidewalk goes in the same direction as the way, it's the left sidewalk. Otherwise it's the right one.
                     if way.junctions[0].id == n1:
