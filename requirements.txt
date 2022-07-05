@@ -2,5 +2,5 @@ osmnx==1.2.1
 argparse
 geojson
 toolz
-crossroads-segmentation==0.1.4
+crossroads-segmentation==0.1.5
 pyrealb

@@ -53,7 +53,10 @@ else:
 #
 
 # OSMnx configuration
-ox.config(use_cache=True, useful_tags_way = list(set(ox.settings.useful_tags_way + cg.way_tags_to_keep)), useful_tags_node = list(set(ox.settings.useful_tags_node + cg.node_tags_to_keep)))
+ox.settings.osm_xml_way_tags = ox.settings.osm_xml_way_tags + cg.way_tags_to_keep
+ox.settings.useful_tags_way = ox.settings.useful_tags_way + cg.way_tags_to_keep
+ox.settings.osm_xml_node_tags = ox.settings.osm_xml_way_tags + cg.node_tags_to_keep
+ox.settings.useful_tags_node = ox.settings.useful_tags_way + cg.node_tags_to_keep
 if "overpass_url" in config:
     ox.settings.overpass_endpoint = config["overpass_url"]
 
@@ -76,8 +79,8 @@ else:
 
 # graph segmentation (from https://gitlab.limos.fr/jmafavre/crossroads-segmentation/-/blob/master/src/get-crossroad-description.py)
 
-# remove sidewalks, cycleways, service ways
-G = cs.Segmentation.remove_footways_and_parkings(G, False)
+# prepae network by removing unwanted ways
+G = cs.Segmentation.prepare_network(G)
 # build an undirected version of the graph
 undirected_G = ox.utils_graph.get_undirected(G)
 # segment it using topology and semantic
