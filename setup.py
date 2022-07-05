@@ -10,7 +10,7 @@ README = (HERE / "README.md").read_text()
 # This call to setup() does all the work
 setup(
     name="crossroads-description",
-    version="0.5",
+    version="0.5.1",
     description="Crossroads description is a python tool that produces automatic description of data from OpenStreetMap.",
     long_description=README,
     long_description_content_type="text/markdown",
@@ -24,11 +24,11 @@ setup(
         "Programming Language :: Python :: 3.7",
     ],
     install_requires=[
-        "osmnx==1.1.2",
+        "osmnx==1.2.1",
         "argparse",
         "geojson",
         "toolz",
-        "crossroads-segmentation",
+        "crossroads-segmentation==0.1.4",
         "pyrealb"
     ],
     packages=["crdesc"],
