@@ -93,6 +93,12 @@ class Description:
             street_name = branch.street_name.split(" ")
             branch.street_name = [street_name.pop(0).lower()," ".join(street_name)]
 
+        #
+        # Sidewalks and islands generation
+        #
+
+        sidewalk_paths = getSidewalks(G, branches, crossroad_border_nodes, crossroad_inner_nodes)
+
         # graph cleaning to remove edges that are not part of the crossroads
         to_remove = []
         for (n1, n2, edge) in G.edges(data=True):
@@ -100,13 +106,9 @@ class Description:
                 to_remove.append([n1,n2])
         G.remove_edges_from(to_remove)
 
-        #
-        # Sidewalks and islands generation
-        #
-
         # Get sidewalks
         sidewalks = []
-        for sidewalk_id, sidewalk_path in enumerate(getSidewalks(G, branches, crossroad_border_nodes)):
+        for sidewalk_id, sidewalk_path in enumerate(sidewalk_paths):
             sidewalk = Sidewalk(sidewalk_id)
             sidewalks.append(sidewalk)
             for j, node in enumerate(sidewalk_path):

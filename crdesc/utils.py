@@ -84,17 +84,30 @@ def getIslands(G, branches, crossroad_border_nodes):
     return faces
 
 # Detect sidewalks by computing shortest path 
-def getSidewalks(G, branches, crossroad_border_nodes):
+def getSidewalks(G, branches, crossroad_border_nodes, crossroad_inner_nodes):
 
     G = ox.utils_graph.get_undirected(G)
 
     def getLeftShortestPath(G, n1, n2):
-        path = [n1, next(G.neighbors(n1))]
+        path = [n1]
         while path[-1] != n2:
             neighbors = [neighbor for neighbor in G.neighbors(path[-1])]
             azimuth_by_node = [[next_node, azimuthAngle(G.nodes[path[-1]]["x"], G.nodes[path[-1]]["y"], G.nodes[next_node]["x"], G.nodes[next_node]["y"])] for next_node in neighbors]
-            azimuth_by_node.sort(key=lambda x: x[1])
-            next_node = azimuth_by_node[([el[0] for el in azimuth_by_node].index(path[-2]) + 1) % len(azimuth_by_node)][0]
+            azimuth_by_node.sort(key=lambda x: x[1]) # format : [[n1, azimuth], [n2, azimuth],...]
+            if len(path) > 1: # if we started the path, the next node corresponds to the index next the n-2 node
+                next_node = azimuth_by_node[([el[0] for el in azimuth_by_node].index(path[-2]) + 1) % len(azimuth_by_node)][0]
+            else : # the first node of the path
+                if len(azimuth_by_node) == 1: # if there's only one neighbour, it's the next node
+                    next_node = azimuth_by_node[0][0]
+                else: # else we grab an external node and use it to find the next node
+                    external = None
+                    for el in azimuth_by_node:
+                        if el[0] not in crossroad_border_nodes.keys() and el[0] not in crossroad_inner_nodes.keys():
+                            if external is None:
+                                external = el[0]
+                            else :
+                                azimuth_by_node.remove(el)
+                    next_node = azimuth_by_node[([el[0] for el in azimuth_by_node].index(external) + 1) % len(azimuth_by_node)][0]
             path.append(next_node)
             if path[-1] == n1: return None
         return path
