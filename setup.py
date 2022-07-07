@@ -10,7 +10,7 @@ README = (HERE / "README.md").read_text()
 # This call to setup() does all the work
 setup(
     name="crossroads-description",
-    version="0.6",
+    version="0.6.1",
     description="Crossroads description is a python tool that produces automatic description of data from OpenStreetMap.",
     long_description=README,
     long_description_content_type="text/markdown",
