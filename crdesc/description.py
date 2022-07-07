@@ -12,6 +12,7 @@ class Description:
     def __init__(self):
 
         self.crossroad = None
+        Junction._junctions = {}
 
     def computeModel(self, G, segmentation_file):
         #

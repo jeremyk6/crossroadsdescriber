@@ -29,8 +29,9 @@ class AbstractJunction():
     pass
 
 # Concrete junction
-_junctions = {}
 class Junction(AbstractJunction):
+
+    _junctions = {}
 
     def __init__(self, id, x, y):
         super().__init__()
@@ -42,7 +43,7 @@ class Junction(AbstractJunction):
     def getJunctions(type = None):
         if type :
             return list(filter(lambda junction: type in junction.type , Junction.getJunctions().values()))
-        return _junctions
+        return Junction._junctions
 
 # Junction decorator
 class JunctionDecorator(AbstractJunction):
@@ -180,8 +181,8 @@ def createTrafficSignal(junction, node):
 
 def createJunction(node_id, node):
     junction = None
-    if node_id in _junctions.keys():
-        junction = _junctions[node_id]
+    if node_id in Junction._junctions.keys():
+        junction = Junction._junctions[node_id]
     else :
         junction = Junction(node_id, node["x"], node["y"])
             
@@ -193,7 +194,7 @@ def createJunction(node_id, node):
         if "traffic_signals" in node:
             junction = createTrafficSignal(junction, node)
 
-        _junctions[node_id] = junction
+        Junction._junctions[node_id] = junction
 
     return junction
 
