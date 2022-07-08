@@ -101,13 +101,15 @@ def getSidewalks(G, branches, crossroad_border_nodes, crossroad_inner_nodes):
                     next_node = azimuth_by_node[0][0]
                 else: # else we grab an external node and use it to find the next node
                     external = None
+                    nodes = []
                     for el in azimuth_by_node:
                         if el[0] not in crossroad_border_nodes.keys() and el[0] not in crossroad_inner_nodes.keys():
                             if external is None:
                                 external = el[0]
-                            else :
-                                azimuth_by_node.remove(el)
-                    next_node = azimuth_by_node[([el[0] for el in azimuth_by_node].index(external) + 1) % len(azimuth_by_node)][0]
+                                nodes.append(el)
+                        else:
+                            nodes.append(el)  
+                    next_node = nodes[([el[0] for el in nodes].index(external) + 1) % len(nodes)][0]
             path.append(next_node)
             if path[-1] == n1: return None
         return path
