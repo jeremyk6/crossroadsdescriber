@@ -246,14 +246,13 @@ class Description:
 
         # Load PyRealB french lexicon and add missing words
         loadFr()
-        addToLexicon("pyramide", {"N":{"g":"f","tab":["n17"]}})
-        addToLexicon("viaduc", {"N":{"g":"m","tab":["n3"]}})
-        addToLexicon("croisement", {"N":{"g":"m","tab":["n3"]}})
-        addToLexicon("îlot", {"N":{"g":"m","tab":["n3"]}})
-        addToLexicon("tourne-à-gauche", {"N":{"g":"m","tab":["n3"]}})
-        addToLexicon("tourne-à-droite", {"N":{"g":"m","tab":["n3"]}})
-        addToLexicon("entrant", {"A":{"tab":["n28"]}})
-        addToLexicon("sortant", {"A":{"tab":["n28"]}})
+        addToLexicon("pyramide", {"N":{"g":"f","tab":"n17"}})
+        addToLexicon("croisement", {"N":{"g":"m","tab":"n3"}})
+        addToLexicon("îlot", {"N":{"g":"m","tab":"n3"}})
+        addToLexicon("tourne-à-gauche", {"N":{"g":"m","tab":"n3"}})
+        addToLexicon("tourne-à-droite", {"N":{"g":"m","tab":"n3"}})
+        addToLexicon("entrant", {"A":{"tab":"n28"}})
+        addToLexicon("sortant", {"A":{"tab":"n28"}})
 
         #
         # General description
