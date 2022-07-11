@@ -172,7 +172,17 @@ def remove_unwanted_ways(G):
     if len(G.nodes) != 0:
         G = ox.utils_graph.get_largest_component(G)
     return G
-    
+
+# remove edges that are not part of the crossroads
+def cleanGraph(G, crossroad_edges):
+    clean_G = G.copy()
+    to_remove = []
+    for (n1, n2, edge) in G.edges(data=True):
+        if "%s%s"%(n1,n2) not in crossroad_edges.keys() and "%s%s"%(n2,n1) not in crossroad_edges.keys():
+            to_remove.append([n1,n2])
+    clean_G.remove_edges_from(to_remove)
+    clean_G = ox.utils_graph.remove_isolated_nodes(clean_G)
+    return clean_G  
 
 # Translate words
 def tr(word):

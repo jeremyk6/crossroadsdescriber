@@ -28,7 +28,7 @@ setup(
         "argparse",
         "geojson",
         "toolz",
-        "crossroads-segmentation==0.1.10",
+        "crossroads-segmentation>=0.1.10",
         "pyrealb"
     ],
     packages=["crdesc"],

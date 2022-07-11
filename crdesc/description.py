@@ -27,10 +27,15 @@ class Description:
         # crossroad nodes creation
         crossroad_inner_nodes = {}
         crossroad_border_nodes = {}
+        crossroad_external_nodes = {}
         for node_id in seg_crossroad.inner_nodes:
             crossroad_inner_nodes[node_id] = createJunction(node_id, G.nodes[node_id])
         for node_id in seg_crossroad.border_nodes:
             crossroad_border_nodes[node_id] = createJunction(node_id, G.nodes[node_id])
+        for branch in seg_crossroad.branches :
+            for node_id in branch.border_nodes:
+                if node_id not in (list(crossroad_inner_nodes.keys()) + list(crossroad_border_nodes.keys())):
+                    crossroad_external_nodes[node_id] = createJunction(node_id, G.nodes[node_id])
 
         #crossroad edges creation
         crossroad_edges = {}
@@ -69,7 +74,6 @@ class Description:
                 for i in range(len(azimuths)):
                     if azimuths[i] >= 270 : azimuths[i] -= 360
             azimuths, ways = (list(t) for t in zip(*sorted(zip(azimuths, ways))))
-            # Casse ici : 45.77340 3.09223 WTF ?!
 
             # compute mean angle by branch
             mean_angle = meanAngle(G, border_nodes, crossroad_center)
@@ -101,11 +105,7 @@ class Description:
         sidewalk_paths = getSidewalks(G, branches, crossroad_border_nodes, crossroad_inner_nodes)
 
         # graph cleaning to remove edges that are not part of the crossroads
-        to_remove = []
-        for (n1, n2, edge) in G.edges(data=True):
-            if "%s%s"%(n1,n2) not in crossroad_edges.keys() and "%s%s"%(n2,n1) not in crossroad_edges.keys():
-                to_remove.append([n1,n2])
-        G.remove_edges_from(to_remove)
+        G = cleanGraph(G, crossroad_edges)
 
         # Get sidewalks
         sidewalks = []
