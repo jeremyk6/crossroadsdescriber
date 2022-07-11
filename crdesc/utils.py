@@ -10,28 +10,6 @@ import osmnx as ox
 import networkx as nx
 import time
 
-# Compute  azimuth between two points
-# Source : https://developpaper.com/example-of-python-calculating-azimuth-angle-based-on-the-coordinates-of-two-points/
-def azimuthAngle( x1, y1, x2, y2):
-    angle = 0.0
-    dx = x2 - x1
-    dy = y2 - y1
-    if x2 == x1:
-        angle = math.pi / 2.0
-        if y2 == y1 :
-            angle = 0.0
-        elif y2 < y1 :
-            angle = 3.0 * math.pi / 2.0
-    elif x2 > x1 and y2 > y1:
-        angle = math.atan(dx / dy)
-    elif x2 > x1 and y2 < y1 :
-        angle = math.pi / 2 + math.atan(-dy / dx)
-    elif x2 < x1 and y2 < y1 :
-        angle = math.pi + math.atan(dx / dy)
-    elif x2 < x1 and y2 > y1 :
-        angle = 3.0 * math.pi / 2.0 + math.atan(dy / -dx)
-    return (angle * 180 / math.pi)
-
 # Compute mean coordinates of a list of nodes
 # Params :
 #   G : osmnx graph
@@ -50,7 +28,7 @@ def meanAngle(G, border_nodes, crossroad_center):
     angles = []
     for border_node in border_nodes:
         border_node = G.nodes[border_node]
-        angles.append(azimuthAngle(crossroad_center["x"], crossroad_center["y"], border_node["x"], border_node["y"]))
+        angles.append(ox.bearing.calculate_bearing(crossroad_center["y"], crossroad_center["x"], border_node["y"], border_node["x"]))
     mean_angle = circmean(angles, 0, 360)
     return mean_angle
 
@@ -92,7 +70,7 @@ def getSidewalks(G, branches, crossroad_border_nodes, crossroad_inner_nodes):
         path = [n1]
         while path[-1] != n2:
             neighbors = [neighbor for neighbor in G.neighbors(path[-1])]
-            azimuth_by_node = [[next_node, azimuthAngle(G.nodes[path[-1]]["x"], G.nodes[path[-1]]["y"], G.nodes[next_node]["x"], G.nodes[next_node]["y"])] for next_node in neighbors]
+            azimuth_by_node = [[next_node, ox.bearing.calculate_bearing(G.nodes[path[-1]]["y"], G.nodes[path[-1]]["x"], G.nodes[next_node]["y"], G.nodes[next_node]["x"])] for next_node in neighbors]
             azimuth_by_node.sort(key=lambda x: x[1]) # format : [[n1, azimuth], [n2, azimuth],...]
             if len(path) > 1: # if we started the path, the next node corresponds to the index next the n-2 node
                 next_node = azimuth_by_node[([el[0] for el in azimuth_by_node].index(path[-2]) + 1) % len(azimuth_by_node)][0]

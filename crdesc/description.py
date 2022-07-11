@@ -67,7 +67,7 @@ class Description:
                 edge_id = "%s%s"%(edge[0],edge[1])
                 crossroad_edges[edge_id] = createWay(edge, G, seg_crossroad.border_nodes)
                 ways.append(crossroad_edges[edge_id])
-                azimuths.append(azimuthAngle(crossroad_center["x"], crossroad_center["y"], border_node["x"], border_node["y"]))
+                azimuths.append(ox.bearing.calculate_bearing(crossroad_center["y"], crossroad_center["x"], border_node["y"], border_node["x"]))
 
             # reorder ways in branch
             if(max(azimuths) - min(azimuths) >= 180):
