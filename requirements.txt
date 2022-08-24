@@ -1,4 +1,5 @@
 osmnx==1.2.1
+scipy
 argparse
 geojson
 toolz
