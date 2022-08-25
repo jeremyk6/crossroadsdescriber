@@ -244,9 +244,9 @@ def createWay(edge, G, border_nodes=[]):
         junctions.append(createJunction(node_id, node))
 
     # ways creation
-    # hack : if an edge does not have a name, we name it "rue qui n'a pas de nom"
+    # if an edge does not have a name, we set the name to None
     if not "name" in edge:
-        edge["name"] = "rue qui n'a pas de nom"
+        edge["name"] = None
     way = Way(edge["osmid"], edge["name"], junctions, channels = [], sidewalks=[None, None], islands=[None, None])
 
     # if n2 is a border node, it means the way is drawn as outgoing from the direction.

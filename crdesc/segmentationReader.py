@@ -10,7 +10,8 @@ class SegmentedCrossroad():
 
 class SegmentedBranch():
 
-    def __init__(self, inner_nodes, border_nodes, edges_by_nodes):
+    def __init__(self, id, inner_nodes, border_nodes, edges_by_nodes):
+        self.id = id
         self.inner_nodes = inner_nodes
         self.border_nodes= border_nodes
         self.edges_by_nodes = edges_by_nodes
@@ -39,6 +40,7 @@ class SegmentationReader():
     def __read_crossroad_data(self, data):
         crossroad = None
         branches = []
+        id = 1
         for el in data:
             inner_nodes =       el['nodes']['inner']
             border_nodes =      el['nodes']['border']
@@ -46,6 +48,7 @@ class SegmentationReader():
             if el['type'] == 'crossroad':
                 crossroad = SegmentedCrossroad(inner_nodes, border_nodes, edges_by_nodes, None)
             else:
-                branches.append(SegmentedBranch(inner_nodes, border_nodes, edges_by_nodes))
+                branches.append(SegmentedBranch(id, inner_nodes, border_nodes, edges_by_nodes))
+                id += 1
         crossroad.branches = branches
         return crossroad

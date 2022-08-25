@@ -2,8 +2,6 @@ from .model import *
 from .segmentationReader import *
 from .utils import *
 from pyrealb import *
-from toolz import unique
-import osmnx as ox
 import networkx as nx
 from geojson import Point, LineString, Feature, FeatureCollection, dumps
 
@@ -42,61 +40,48 @@ class Description:
         for edge in seg_crossroad.edges_by_nodes:
             edge_id = "%s%s"%(edge[0],edge[1])
             crossroad_edges[edge_id] = createWay(edge, G)
-
-        # branch creation
-        id = 1
-        branches = []
         for branch in seg_crossroad.branches:
-
-            ways = []
-            azimuths = []
-
-            border_nodes = []
-
             for edge in branch.edges_by_nodes:
-
-                # keep border nodes
-                border_node = None
-                if edge[0] in branch.border_nodes and edge[0] not in border_nodes:
-                    border_nodes.append(edge[0])
-                    border_node = G.nodes[edge[0]]
-                if edge[1] in branch.border_nodes and edge[1] not in border_nodes:
-                    border_nodes.append(edge[1])
-                    border_node = G.nodes[edge[1]]
-
                 edge_id = "%s%s"%(edge[0],edge[1])
-                crossroad_edges[edge_id] = createWay(edge, G, seg_crossroad.border_nodes)
-                ways.append(crossroad_edges[edge_id])
-                azimuths.append(ox.bearing.calculate_bearing(crossroad_center["y"], crossroad_center["x"], border_node["y"], border_node["x"]))
+                crossroad_edges[edge_id] = createWay(edge, G, seg_crossroad.border_nodes)    
 
-            # reorder ways in branch
-            if(max(azimuths) - min(azimuths) >= 180):
-                for i in range(len(azimuths)):
-                    if azimuths[i] >= 270 : azimuths[i] -= 360
-            azimuths, ways = (list(t) for t in zip(*sorted(zip(azimuths, ways))))
+        # Get border path of the intersection, then keep only the border nodes (the external nodes of the branches)
+        border_path = getBorderPath(G, crossroad_inner_nodes, crossroad_border_nodes, crossroad_external_nodes, crossroad_edges)
+        external_nodes = [junction.id for junction in crossroad_external_nodes.values()] #list(dict.fromkeys(filter(lambda node : node in  list(crossroad_external_nodes.keys()), border_path)))
+        branch_edges = getBranchesEdges(border_path, seg_crossroad.branches, external_nodes)
 
-            # compute mean angle by branch
-            mean_angle = meanAngle(G, border_nodes, crossroad_center)
+        # create branches
+        branches = {}
+        for edge in branch_edges:
+            if not edge["branch_id"] in branches:
+                branches[edge["branch_id"]] = Branch(edge["branch_id"], None, None, None, [])
+            branch = branches[edge["branch_id"]]
+            branch.ways.append(crossroad_edges[edge["edge_id"]])
 
-            # fetch name of the way in the middle of the branch
-            name = ways[int(len(ways)/2)].name
+        # add branches attributes
+        min = None
+        max = None
+        for branch_id, branch in branches.items():
+            nodes = []
+            for way in branch.ways:
+                if way.name != None : 
+                    branch.street_name = [way.name.split(" ").pop(0).lower()," ".join(way.name.split(" "))]
+                if way.junctions[0].id not in nodes : nodes.append(way.junctions[0].id)
+                if way.junctions[1].id not in nodes : nodes.append(way.junctions[1].id)
+            # compute branch bearing
+            branch.angle = meanAngle(G, nodes, crossroad_center)
+            if min is None: min,max = branch,branch
+            if branch.angle < min.angle: min = branch
+            if branch.angle > max.angle: max = branch
 
-            branches.append(Branch(id, mean_angle, None, name, ways))
+        # get the branch nearest to the north, then shift the branches list
+        branches = list(branches.values())
+        index = branches.index(max) if 360 - max.angle < min.angle else branches.index(min)
+        branches = branches[index:] + branches[:index]
 
-            id += 1
-
-        # order branch by angle
-        branches.sort(key=lambda b: b.angle)
-        # if the last branch is the nearest to the north, we make it the first
-        if 360-branches[-1].angle < branches[0].angle:
-            branches.insert(0, branches.pop())
-
-        # branch number : number branches according to their clockwise order
-        for i, branch in enumerate(branches): 
-            branch.number = i+1
-            #format street name for the text generation
-            street_name = branch.street_name.split(" ")
-            branch.street_name = [street_name.pop(0).lower()," ".join(street_name)]
+        # number branches according to their actuel order
+        for i in range(len(branches)):
+            branches[i].number = i + 1
 
         #
         # Sidewalks and islands generation
@@ -254,11 +239,16 @@ class Description:
         addToLexicon("entrant", {"A":{"tab":"n28"}})
         addToLexicon("sortant", {"A":{"tab":"n28"}})
 
+        # if a branch does not have a name, we name it "rue qui n'a pas de nom"
+        for branch in self.crossroad.branches:
+            if branch.street_name is None : branch.street_name = ["rue","qui n'a pas de nom"]
+
         #
         # General description
         #
-
-        streets = map(list, unique(map(tuple, [branch.street_name for branch in self.crossroad.branches]))) # horrible syntax to remove duplicates
+        streets = []
+        for branch in self.crossroad.branches:
+            if branch.street_name not in streets : streets.append(branch.street_name) 
         s = CP(C("et"))
         for street in streets:
             s.add(
