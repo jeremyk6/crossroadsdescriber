@@ -87,7 +87,7 @@ class Description:
         # Sidewalks and islands generation
         #
 
-        sidewalk_paths = getSidewalks(G, branches, crossroad_border_nodes, crossroad_inner_nodes)
+        sidewalk_paths = getSidewalks(border_path, branches, external_nodes)
 
         # graph cleaning to remove edges that are not part of the crossroads
         G = cleanGraph(G, crossroad_edges)

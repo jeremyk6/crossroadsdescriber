@@ -134,65 +134,31 @@ def getIslands(G, branches, crossroad_border_nodes):
 
     return faces
 
-# Detect sidewalks by computing shortest path 
-def getSidewalks(G, branches, crossroad_border_nodes, crossroad_inner_nodes):
+# Get sidewalks by following the border path of the intersection
+def getSidewalks(border_path, branches, external_nodes):
 
-    G = ox.utils_graph.get_undirected(G)
-
-    def getLeftShortestPath(G, n1, n2):
-        path = [n1]
-        while path[-1] != n2:
-            neighbors = [neighbor for neighbor in G.neighbors(path[-1])]
-            azimuth_by_node = [[next_node, ox.bearing.calculate_bearing(G.nodes[path[-1]]["y"], G.nodes[path[-1]]["x"], G.nodes[next_node]["y"], G.nodes[next_node]["x"])] for next_node in neighbors]
-            azimuth_by_node.sort(key=lambda x: x[1]) # format : [[n1, azimuth], [n2, azimuth],...]
-            if len(path) > 1: # if we started the path, the next node corresponds to the index next the n-2 node
-                next_node = azimuth_by_node[([el[0] for el in azimuth_by_node].index(path[-2]) + 1) % len(azimuth_by_node)][0]
-            else : # the first node of the path
-                if len(azimuth_by_node) == 1: # if there's only one neighbour, it's the next node
-                    next_node = azimuth_by_node[0][0]
-                else: # else we grab an external node and use it to find the next node
-                    external = None
-                    nodes = []
-                    for el in azimuth_by_node:
-                        if el[0] not in crossroad_border_nodes.keys() and el[0] not in crossroad_inner_nodes.keys():
-                            if external is None:
-                                external = el[0]
-                                nodes.append(el)
-                        else:
-                            nodes.append(el)  
-                    next_node = nodes[([el[0] for el in nodes].index(external) + 1) % len(nodes)][0]
-            path.append(next_node)
-            if path[-1] == n1: return None
-        return path
-
+    branch_nodes = []
     sidewalk_nodes = []
-    for i, branch in enumerate(branches):
-        
-        # Keep border nodes of the branch
-        border_nodes = []
-        for j, way in enumerate(branch.ways):
+    for branch in branches:
+        ways = [branch.ways[0]]
+        if len(branch.ways) > 1: ways.append(branch.ways[-1])
+        nodes = []
+        for way in ways:
             for junction in way.junctions:
-                if junction.id not in crossroad_border_nodes.keys():
-                    border_nodes.append(junction)
+                if junction.id in external_nodes and junction.id not in nodes: nodes.append(junction.id)
+        sidewalk_nodes += nodes
+        branch_nodes.append(nodes)
 
-        # Filter to keep the most left and most right nodes (branch sidewalk nodes)
-        branch_sidewalk_nodes = []
-        branch_sidewalk_nodes.append(border_nodes[0])
-        if(len(border_nodes) > 1):
-            branch_sidewalk_nodes.append(border_nodes[-1])
-        sidewalk_nodes.append(branch_sidewalk_nodes)
+    sidewalks = []
+    sidewalk = []      
+    for node in border_path:
+        sidewalk.append(node)
+        if len(sidewalk) > 1 and node in sidewalk_nodes and sidewalk[0] in sidewalk_nodes:
+            if [sidewalk[0],sidewalk[-1]] not in branch_nodes and sidewalk[0] != sidewalk[-1]:
+                sidewalks.append(sidewalk)
+            sidewalk = [node]
 
-    sidewalk_paths = []
-    for i, branch_sidewalk_nodes in enumerate(sidewalk_nodes):
-        # create sidewalk path
-        next_i = i+1 if i < len(sidewalk_nodes)-1 else 0
-        sidewalk_n1 = branch_sidewalk_nodes[1] if len(branch_sidewalk_nodes) > 1 else branch_sidewalk_nodes[0]
-        sidewalk_n2 = sidewalk_nodes[next_i][0]
-        sidewalk_path = getLeftShortestPath(G, sidewalk_n1.id, sidewalk_n2.id) # ox.distance.shortest_path(G, sidewalk_n1.id, sidewalk_n2.id)
-        if(sidewalk_path):
-            sidewalk_paths.append(sidewalk_path)
-        
-    return sidewalk_paths
+    return sidewalks
 
 def isPolygonClockwiseOrdered(polygon, G):
     polygon = list(polygon)
