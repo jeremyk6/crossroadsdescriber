@@ -65,7 +65,7 @@ class Description:
             nodes = []
             for way in branch.ways:
                 if way.name != None : 
-                    branch.street_name = [way.name.split(" ").pop(0).lower()," ".join(way.name.split(" "))]
+                    branch.street_name = [way.name.split(" ").pop(0).lower()," ".join(way.name.split(" ")[1:])]
                 if way.junctions[0].id not in nodes : nodes.append(way.junctions[0].id)
                 if way.junctions[1].id not in nodes : nodes.append(way.junctions[1].id)
             # compute branch bearing
