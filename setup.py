@@ -7,6 +7,10 @@ HERE = pathlib.Path(__file__).parent
 # The text of the README file
 README = (HERE / "README.md").read_text()
 
+# The requirements file
+with open('requirements.txt') as f:
+    required = f.read().splitlines()
+
 # This call to setup() does all the work
 setup(
     name="crossroads-description",
@@ -23,14 +27,7 @@ setup(
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.7",
     ],
-    install_requires=[
-        "osmnx==1.2.1",
-        "argparse",
-        "geojson",
-        "toolz",
-        "crossroads-segmentation>=0.1.10",
-        "pyrealb"
-    ],
+    install_requires=required,
     packages=["crdesc"],
     include_package_data=True,
 )
