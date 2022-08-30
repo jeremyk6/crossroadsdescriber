@@ -285,6 +285,8 @@ class Description:
                     N("voie")
                 )
             )
+            # temporary fix for pyrealb issue 4 (https://github.com/lapalme/pyrealb/issues/4)
+            if len(channels) == 8 : n_voies = "de huit voies"
 
             channels_in_desc = CP(C("et"))
             channels_out_desc = CP(C("et"))
