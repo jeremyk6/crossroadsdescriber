@@ -3,6 +3,7 @@ import osmnx as ox
 import networkx as nx
 import pandas as pd
 import operator
+import copy
 
 # Compute mean coordinates of a list of nodes
 # Params :
@@ -107,7 +108,7 @@ def getBranchesEdges(border_path, seg_crossroad_branches, external_nodes):
 
 # Detect islands by closing branches with multiple ways, then by detecting faces
 def getIslands(G, branches, crossroad_border_nodes):
-    tG = nx.Graph(G)
+    tG = copy.deepcopy(G)
 
     for i, branch in enumerate(branches): 
         border_nodes = []
@@ -118,10 +119,11 @@ def getIslands(G, branches, crossroad_border_nodes):
         # Create faces for islands not closed in the graph (border islands)
         for j in range(len(border_nodes)-1):
             tG.add_edge(border_nodes[j].id, border_nodes[j+1].id)
+    ox.distance.add_edge_lengths(tG)
 
-
+    tG = nx.Graph(tG)
     faces = []
-    for cycle in nx.minimum_cycle_basis(tG):
+    for cycle in nx.minimum_cycle_basis(tG, "length"):
         ordered = []
         to_handle = cycle[0]
         while len(cycle) > 0:
