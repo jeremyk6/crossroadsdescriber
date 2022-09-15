@@ -14,7 +14,7 @@ with open('requirements.txt') as f:
 # This call to setup() does all the work
 setup(
     name="crossroads-description",
-    version="0.7.1",
+    version="1.0",
     description="Crossroads description is a python tool that produces automatic description of data from OpenStreetMap.",
     long_description=README,
     long_description_content_type="text/markdown",
@@ -28,6 +28,6 @@ setup(
         "Programming Language :: Python :: 3.7",
     ],
     install_requires=required,
-    packages=["crdesc"],
+    packages=["crossroadsdescription"],
     include_package_data=True,
 )

@@ -6,8 +6,8 @@ import tempfile
 import osmnx as ox
 import crseg.utils as u
 import crseg.segmentation as cs
-import crdesc.description as cd
-import crdesc.config as cg
+import crossroadsdescription.description as cd
+import crossroadsdescription.config as cg
 
 #
 # Configuration

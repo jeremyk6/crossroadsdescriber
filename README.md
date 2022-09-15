@@ -1,3 +1,7 @@
+# ⚠️ Tool unmaintained
+
+This tool is no longer maintained and was split in two packages : [crmodel](https://github.com/jeremyk6/crmodel) and [crdesc](https://github.com/jeremyk6/crdesc) that will achieve the exact same purpose but separatly to allow for more flexibility and reusages possibilities.
+
 # CrossroadsDescriber
 
 **CrossroadsDescriber** is a Python tool that produces automatic text description of data from OpenStreetMap.
